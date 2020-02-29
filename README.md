@@ -1,4 +1,4 @@
-# coronatriage: Corona triage app
+# corona-triage: Corona triage app
 
 ## 목표 
 
