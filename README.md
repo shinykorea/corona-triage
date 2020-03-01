@@ -74,3 +74,5 @@
 ![image](https://user-images.githubusercontent.com/6457691/75626890-a671e100-5c0e-11ea-95b9-e25c28d277be.png)
 
 
+## 웹 
+- http://app.zarathu.com/corona/corona-triage/
