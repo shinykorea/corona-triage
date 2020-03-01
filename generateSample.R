@@ -5,7 +5,7 @@ generate = function(day){
   count = sample(7:13, day, replace = TRUE) 
   oxygen = sample(91:98, day, replace = TRUE)
   pressure = sample(90:120, day, replace = TRUE)
-  breath = rep(sample(c(TRUE, FALSE), 1),day)
+  breath = sample(5:30, day, replace = TRUE)
   datatable(data.frame(age, disease, temp, count, oxygen, pressure, breath), rownames = FALSE)
 }
 

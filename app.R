@@ -7,6 +7,20 @@ library(dplyr)
 library(htmltools)
 library(ggplot2)
 library(gridExtra)
+library(shinymanager)  ## login 
+library(highcharter)   ## interactive graph
+
+## Make login DB
+
+#credentials <- data.frame(
+#  user = c("admin", "user1"),
+#  password = c("admin", "user1"),
+#  admin = c(T, F),
+#  stringsAsFactors = FALSE)
+
+#create_db(credentials_data = credentials, sqlite_path = "database.sqlite")
+
+
 
 triage <- function(v) {
   age <- disease <- temperature <- count <- oxygen <- pressure <- breath <- 0
@@ -33,31 +47,33 @@ triage <- function(v) {
   if (v$BloodPressure <= 100) pressure <- 2
   if (v$BloodPressure <= 90) pressure <- 3
 
-  if (v$Breath) breath <- 2
+  breath <- as.integer((breath %in% 9:11) + 2 * (breath <= 8))
 
   point <- sum(age, disease, temperature, count, oxygen, pressure, breath)
 
   return(point)
 }
 
-ui <- function() {
-  material_page(
-    title = "corona-triage",
-    useShinyjs(),
-    tags$head(tags$style(type = "text/css", "th, td {text-align:center !important;}")),
-    material_card(
-      depth = 3,
-      fileInput(inputId = "file", label = "upload Excel", accept = ".xlsx", multiple = FALSE),
-      DT::dataTableOutput("tab1"),
-      actionButton("btn", label = "button", style = "display:none;")
-    ),
-    material_card(
-      depth = 4,
-      DT::dataTableOutput("tab2"),
-      plotOutput('img'),
-    )
+ui <- material_page(
+  title = "corona-triage",
+  useShinyjs(),
+  tags$head(tags$style(type = "text/css", "th, td {text-align:center !important;}")),
+  material_card(
+    depth = 3,
+    fileInput(inputId = "file", label = "upload Excel", accept = ".xlsx", multiple = FALSE),
+    DT::dataTableOutput("tab1"),
+    actionButton("btn", label = "button", style = "display:none;")
+  ),
+  material_card(
+    depth = 4,
+    DT::dataTableOutput("tab2"),
+    highchartOutput("img")
   )
-}
+)
+
+# Wrap your UI with secure_app
+ui <- secure_app(ui, enable_admin = T)
+
 
 # f7d794 YELLOW  1 #ffffc0
 # f19066 ORANGE  2 #ffbb85
@@ -105,6 +121,13 @@ styleDT <- function(age, disease, temperature, count, oxygen, pressure, breath, 
 }
 
 server <- function(input, output, session) {
+  
+  ## Apply login DB
+  res_auth <- secure_server(
+    check_credentials = check_credentials("database.sqlite")
+  )
+  
+  
   tab <- newtab <- ""
 
   output$tab1 <- renderDataTable({
@@ -183,20 +206,31 @@ server <- function(input, output, session) {
       dtobj
     })
     
-    output$img = renderPlot(grid.arrange(
-        ggplot(thisTab, aes(x = Date, y = Temperature)) + 
-            geom_line() + geom_point(),
-        ggplot(thisTab, aes(x = Date, y = BreathCount)) + 
-            geom_line() + geom_point(),
-        ggplot(thisTab, aes(x = Date, y = Oxygen)) + 
-            geom_line() + geom_point(),
-        ggplot(thisTab, aes(x = Date, y = BloodPressure)) + 
-            geom_line() + geom_point(),
-        ggplot(thisTab, aes(x = Date, y = Point)) + 
-            geom_line() + geom_point(),
-        nrow = 1
-    ))
+    output$img <- renderHighchart({
+      highchart() %>% 
+        hc_title(text = paste0("Trend: ", thisTab[["Name"]][1]), style = list(color = "black")) %>% 
+        hc_xAxis(time = thisTab[["Date"]], title = list(text = "Days")) %>% 
+        hc_yAxis_multiples(
+          list(top = "0%", height = "20%", title = list(text = "Point"), lineWidth = 3),
+          list(top = "20%", height = "40%", title = list(text = "Temp"), offset = 0, showFirstLabel = T, showLastLabel = T, opposite= T),
+          list(top = "40%", height = "60%", title = list(text = "SpO2"), offset = 0, showFirstLabel = T, showLastLabel = T),
+          list(top = "60%", height = "80%", title = list(text = "RR"), offset = 0, showFirstLabel = T, showLastLabel = T, opposite= T),
+          list(top = "80%", height = "100%", title = list(text = "SBP"), offset = 0, showFirstLabel = T, showLastLabel = T)
+        ) %>% 
+        hc_add_series(name = "Point", data = thisTab[["Point"]]) %>% 
+        hc_add_series(name = "Temp", data = thisTab[["Temperature"]], yAxis = 1) %>%
+        hc_add_series(name = "SpO2", data = thisTab[["Oxygen"]], yAxis = 2) %>%
+        hc_add_series(name = "RR", data = thisTab[["BreathCount"]], yAxis = 3) %>%
+        hc_add_series(name = "SBP", data = thisTab[["BloodPressure"]], yAxis = 4) %>%
+        hc_exporting(enabled = T) %>% 
+        hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
+      
+      
+     
+    })
+    
   })
+      
 }
 
-shinyApp(ui = ui(), server = server, options = list(launch.browser = TRUE))
+shinyApp(ui = ui, server = server, options = list(launch.browser = TRUE))
