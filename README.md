@@ -53,5 +53,24 @@
 
 
 
+## 프로세스
+
+- 초기 실행 창
+
+![image](https://user-images.githubusercontent.com/6457691/75626792-d40a5a80-5c0d-11ea-98ff-d35c1975e6f2.png)
+
+- Example.xlsx 업로드
+
+![image](https://user-images.githubusercontent.com/6457691/75626841-4d09b200-5c0e-11ea-9c5e-cf4ce4d18abe.png)
+
+- 임의 열 선택으로, 버튼 생성
+
+![image](https://user-images.githubusercontent.com/6457691/75626849-601c8200-5c0e-11ea-8d19-d2bb2a0636b5.png)
+
+- 버튼 클릭시, 해당 환자의 데이터를 테이블, 그래프 형태로 출력
+
+![image](https://user-images.githubusercontent.com/6457691/75626874-83473180-5c0e-11ea-827c-73645a5d56f0.png)
+
+![image](https://user-images.githubusercontent.com/6457691/75626890-a671e100-5c0e-11ea-95b9-e25c28d277be.png)
 
 
