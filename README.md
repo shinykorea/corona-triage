@@ -75,4 +75,4 @@
 
 
 ## 웹 
-- http://app.zarathu.com/corona/corona-sickbed/
+- http://app.zarathu.com/corona/corona-triage/
