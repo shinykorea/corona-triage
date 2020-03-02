@@ -83,7 +83,10 @@ ui <- material_page(
         width = 6,
         material_card(
           depth = 3,
-          fileInput(inputId = "file", label = "엑셀(xlsx) 업로드", accept = ".xlsx", multiple = FALSE),
+          fileInput(inputId = "file", 
+                    label = tags$a(href="https://github.com/shinykorea/corona-triage/blob/master/Example.xlsx?raw=true", tags$div(HTML(paste("엑셀(xlsx)", tags$span(style="color:black", "업로드"), sep = "")))), 
+                    accept = ".xlsx", 
+                    multiple = FALSE),
           DT::dataTableOutput("tab1"),
         )
       ),
