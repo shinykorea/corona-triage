@@ -131,7 +131,7 @@ ui <- material_page(
 )
 
 # Wrap your UI with secure_app
-ui <- secure_app(ui, enable_admin = T)
+#ui <- secure_app(ui, enable_admin = T)  개발땐 생략, 배포시 적용
 
 # f7d794 YELLOW  1 #ffffc0
 # f19066 ORANGE  2 #ffbb85
