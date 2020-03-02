@@ -60,20 +60,33 @@ ui <- material_page(
   tags$head(tags$style(type = "text/css", "th, td {text-align:center !important;}")),
   material_tabs(
     tabs = c(
-      "시설" = "facility",
-      "가정" = "home",
-      "병원" = "hospital"
+      "자가" = "home",
+      "생활치료센터" = "facility",
+      "하급병실" = "hospital_general",
+      "상급병실" = "hospital_premium"
     )
   ),
   # Define tab content
   material_tab_content(
-    tab_id = "facility",
-    tags$h1("시설"),
-    material_card(
-      depth = 3,
-      fileInput(inputId = "file", label = "엑셀(xlsx) 업로드", accept = ".xlsx", multiple = FALSE),
-      DT::dataTableOutput("tab1"),
-      #actionButton("btn", label = "button", style = "display:none;")
+    tab_id = "home",
+    tags$h1("자가"),
+    material_row(
+      material_column(
+        width = 6,
+        material_card(
+          depth = 3,
+          fileInput(inputId = "file", label = "엑셀(xlsx) 업로드", accept = ".xlsx", multiple = FALSE),
+          DT::dataTableOutput("tab1"),
+          #actionButton("btn", label = "button", style = "display:none;")
+        )
+      ),
+      material_column(
+        width = 6,
+        material_card(
+          tags$h2("시군구 지도 필요"),
+          p("자가: 시군구 보건소에서 매일 데이터 보내주는 시나리오. 우리는 데이터를 받아서 당일 업데이트 현황을 지도에 보여줘야 함. 예) 당일 업데이트된 사람 60%, 50% 미만이면 빨간색" )
+        )
+      )
     ),
     
     material_card(
@@ -83,12 +96,16 @@ ui <- material_page(
     )
   ),
   material_tab_content(
-    tab_id = "home",
-    tags$h1("가정")
+    tab_id = "facility",
+    tags$h2("생활치료센터")
   ),
   material_tab_content(
-    tab_id = "hospital",
-    tags$h1("병원")
+    tab_id = "hospital_general",
+    tags$h2("상급병실")
+  ),
+  material_tab_content(
+    tab_id = "hospital_premium",
+    tags$h2("하급병실")
   )
   
 )
