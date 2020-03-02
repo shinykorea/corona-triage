@@ -79,7 +79,7 @@ ui <- material_page(
     material_card(
       depth = 4, 
       DT::dataTableOutput("tab2"),
-      highchartOutput("img")
+      div(highchartOutput("img"), style = "height:500px")
     )
   ),
   material_tab_content(
