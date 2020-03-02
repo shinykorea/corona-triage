@@ -58,17 +58,39 @@ ui <- material_page(
   title = "corona-triage",
   useShinyjs(),
   tags$head(tags$style(type = "text/css", "th, td {text-align:center !important;}")),
-  material_card(
-    depth = 3,
-    fileInput(inputId = "file", label = "upload Excel", accept = ".xlsx", multiple = FALSE),
-    DT::dataTableOutput("tab1"),
-    actionButton("btn", label = "button", style = "display:none;")
+  material_tabs(
+    tabs = c(
+      "시설" = "facility",
+      "가정" = "home",
+      "병원" = "hospital"
+    )
   ),
-  material_card(
-    depth = 4,
-    DT::dataTableOutput("tab2"),
-    highchartOutput("img")
+  # Define tab content
+  material_tab_content(
+    tab_id = "facility",
+    tags$h1("시설"),
+    material_card(
+      depth = 3,
+      fileInput(inputId = "file", label = "엑셀(xlsx) 업로드", accept = ".xlsx", multiple = FALSE),
+      DT::dataTableOutput("tab1"),
+      #actionButton("btn", label = "button", style = "display:none;")
+    ),
+    
+    material_card(
+      depth = 4, 
+      DT::dataTableOutput("tab2"),
+      highchartOutput("img")
+    )
+  ),
+  material_tab_content(
+    tab_id = "home",
+    tags$h1("가정")
+  ),
+  material_tab_content(
+    tab_id = "hospital",
+    tags$h1("병원")
   )
+  
 )
 
 # Wrap your UI with secure_app
@@ -158,11 +180,13 @@ server <- function(input, output, session) {
     datatable(
       newtab,
       escape = FALSE,
+      caption = "전체 환자: 시설",
       options = list(
         rowCallback = styleDT(2, 3, 4, 5, 6, 7, 8, 10),
         dom = "ltip",
         autoWidth = TRUE,
-        order = list(list(10, "desc"))
+        order = list(list(10, "desc")),
+        scrollX = TRUE
       ),
       selection = "single",
       filter = "top",
@@ -176,24 +200,25 @@ server <- function(input, output, session) {
     )
   })
 
-  observeEvent(input$btn, {
-    if (input$btn == 0) {
-      return(NULL)
-    }
+  observeEvent(input$tab1_rows_selected, {
+    #if (input$btn == 0) {
+    #  return(NULL)
+    #}
 
     selected <- input$tab1_rows_selected # check none selected
-    shinyjs::runjs('$("#btn").hide()')
-    thisTab = tab %>% filter(Name == newtab$Name[selected])
+    #shinyjs::runjs('$("#btn").hide()')
+    thisTab <- tab %>% filter(Name == newtab$Name[selected])
     output$tab2 <- renderDataTable({
       dtobj <- datatable(
         thisTab,
         rownames = FALSE,
         selection = "none",
+        caption = paste0(thisTab[["Name"]][1], ": 시설"),
         options = list(
           rowsGroup = list(0, 1, 2, 3, 4, 5, 6, 7, 12),
           rowCallback = styleDT(6, 7, 8, 9, 10, 11, 12, 14),
           dom = "ltip",
-          autoWidth = TRUE
+          autoWidth = TRUE, scrollX = TRUE
         )
       )
       path <- file.path(getwd(), "www")
