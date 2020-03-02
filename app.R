@@ -20,8 +20,6 @@ library(highcharter)   ## interactive graph
 
 #create_db(credentials_data = credentials, sqlite_path = "database.sqlite")
 
-
-
 triage <- function(v) {
   age <- disease <- temperature <- count <- oxygen <- pressure <- breath <- 0
 
@@ -55,17 +53,27 @@ triage <- function(v) {
 }
 
 ui <- material_page(
+  nav_bar_color = 'deep-purple lighten-1',
+  color = '#311b92',
   title = "corona-triage",
   useShinyjs(),
+  tags$head(tags$style(type = "text/css", "table.dataTable tr.selected td, table.dataTable td.selected {background-color: #d1c4e9 !important;}")),
   tags$head(tags$style(type = "text/css", "th, td {text-align:center !important;}")),
+  tags$head(tags$style(type = "text/css", "html, body {height:100% !important;}")),
+  tags$head(tags$style(type = "text/css", ".indicator {height:0.3em;}")),
+  tags$head(tags$style(type = "text/css", ".container-fab {height: 3em; background-color: #7e57c2;}")),
+  tags$head(tags$style(type = "text/css", ".btn.btn-default.action-button.buttons-fab.shiny-bound-input { background-color: #b388ff;}")),
+  tags$head(tags$style(type = "text/css", ".tabs .tab a, .tabs .tab a:hover, .tabs .tab a.active {font-size:1.5em; color : #311b92;}")),
   material_tabs(
     tabs = c(
       "자가" = "home",
       "생활치료센터" = "facility",
       "하급병실" = "hospital_general",
       "상급병실" = "hospital_premium"
-    )
+    ),
+    color = '#311b92'
   ),
+  
   # Define tab content
   material_tab_content(
     tab_id = "home",
@@ -77,22 +85,34 @@ ui <- material_page(
           depth = 3,
           fileInput(inputId = "file", label = "엑셀(xlsx) 업로드", accept = ".xlsx", multiple = FALSE),
           DT::dataTableOutput("tab1"),
-          #actionButton("btn", label = "button", style = "display:none;")
         )
       ),
       material_column(
         width = 6,
         material_card(
           tags$h2("시군구 지도 필요"),
-          p("자가: 시군구 보건소에서 매일 데이터 보내주는 시나리오. 우리는 데이터를 받아서 당일 업데이트 현황을 지도에 보여줘야 함. 예) 당일 업데이트된 사람 60%, 50% 미만이면 빨간색" )
+          p("자가: 시군구 보건소에서 매일 데이터 보내주는 시나리오."),
+          p("우리는 데이터를 받아서 당일 업데이트 현황을 지도에 보여줘야 함."),
+          p("예) 당일 업데이트된 사람 60%, 50% 미만이면 빨간색")
+          
         )
       )
     ),
     
     material_card(
       depth = 4, 
-      DT::dataTableOutput("tab2"),
-      div(highchartOutput("img"), style = "height:500px")
+      material_row(
+        height = '100%',
+        material_column(
+          DT::dataTableOutput("tab2", height = '600px'),
+          width = 6
+        ),
+        material_column(
+          highchartOutput("img", height = '600px'), 
+          width = 6
+        )
+      ),
+      div(style = "height:3em;")
     )
   ),
   material_tab_content(
@@ -113,48 +133,74 @@ ui <- material_page(
 # Wrap your UI with secure_app
 ui <- secure_app(ui, enable_admin = T)
 
-
 # f7d794 YELLOW  1 #ffffc0
 # f19066 ORANGE  2 #ffbb85
 # e66767 RED     3 #ff8686
 
+# ede7f6 purple 1
+# d1c4e9 purple 2
+# b39ddb purple 3
+
 styleDT <- function(age, disease, temperature, count, oxygen, pressure, breath, point) {
+  col1 = '#ede7f6'
+  col2 = '#d1c4e9'
+  col3 = '#b39ddb'
   JS(paste0("function(row, data, index){
             // Age 
             if(data[", age, "] > 60){$(row).find('td:eq(", age, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
             if(data[", age, "] > 70){$(row).find('td:eq(", age, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
             if(data[", age, "] > 80){$(row).find('td:eq(", age, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
+            if(data[", age, "] > 60){$(row).find('td:eq(", age, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
+            if(data[", age, "] > 70){$(row).find('td:eq(", age, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
+            if(data[", age, "] > 80){$(row).find('td:eq(", age, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // Diesease
             if(data[", disease, "]){$(row).find('td:eq(", disease, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
+            if(data[", disease, "]){$(row).find('td:eq(", disease, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // Temperature
             if(data[", temperature, "] <= 36 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
             if(data[", temperature, "] >= 37.5 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
             if(data[", temperature, "] > 38){$(row).find('td:eq(", temperature, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
             if(data[", temperature, "] > 39){$(row).find('td:eq(", temperature, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
+            if(data[", temperature, "] <= 36 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
+            if(data[", temperature, "] >= 37.5 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
+            if(data[", temperature, "] > 38){$(row).find('td:eq(", temperature, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
+            if(data[", temperature, "] > 39){$(row).find('td:eq(", temperature, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
         
             // BreathCount    
             if(data[", count, "] <= 11){$(row).find('td:eq(", count, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
             if(data[", count, "] <= 8){$(row).find('td:eq(", count, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
+            if(data[", count, "] <= 11){$(row).find('td:eq(", count, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
+            if(data[", count, "] <= 8){$(row).find('td:eq(", count, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // Oxygen
             if(data[", oxygen, "] <= 95){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
             if(data[", oxygen, "] <= 93){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
             if(data[", oxygen, "] <= 91){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
+            if(data[", oxygen, "] <= 95){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
+            if(data[", oxygen, "] <= 93){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
+            if(data[", oxygen, "] <= 91){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // BloodPressure
             if(data[", pressure, "] <= 110){$(row).find('td:eq(", pressure, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
             if(data[", pressure, "] <= 100){$(row).find('td:eq(", pressure, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
             if(data[", pressure, "] <= 90){$(row).find('td:eq(", pressure, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
+            if(data[", pressure, "] <= 110){$(row).find('td:eq(", pressure, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
+            if(data[", pressure, "] <= 100){$(row).find('td:eq(", pressure, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
+            if(data[", pressure, "] <= 90){$(row).find('td:eq(", pressure, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // Breath
             if(data[", breath, "]){$(row).find('td:eq(", breath, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
+            if(data[", breath, "]){$(row).find('td:eq(", breath, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
             
             // Point
             if(data[", point, "] > 5){$(row).find('td:eq(", point, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
             if(data[", point, "] > 10){$(row).find('td:eq(", point, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
             if(data[", point, "] > 15){$(row).find('td:eq(", point, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
+            if(data[", point, "] > 5){$(row).find('td:eq(", point, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
+            if(data[", point, "] > 10){$(row).find('td:eq(", point, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
+            if(data[", point, "] > 15){$(row).find('td:eq(", point, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
         }"))
 }
@@ -199,8 +245,8 @@ server <- function(input, output, session) {
       escape = FALSE,
       caption = "전체 환자: 시설",
       options = list(
-        rowCallback = styleDT(2, 3, 4, 5, 6, 7, 8, 10),
-        dom = "ltip",
+        rowCallback = styleDT(3, 4, 5, 6, 7, 8, 9, 11),
+        dom = "tip",
         autoWidth = TRUE,
         order = list(list(10, "desc")),
         scrollX = TRUE
@@ -218,12 +264,8 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$tab1_rows_selected, {
-    #if (input$btn == 0) {
-    #  return(NULL)
-    #}
-
+    
     selected <- input$tab1_rows_selected # check none selected
-    #shinyjs::runjs('$("#btn").hide()')
     thisTab <- tab %>% filter(Name == newtab$Name[selected])
     output$tab2 <- renderDataTable({
       dtobj <- datatable(
@@ -233,9 +275,10 @@ server <- function(input, output, session) {
         caption = paste0(thisTab[["Name"]][1], ": 시설"),
         options = list(
           rowsGroup = list(0, 1, 2, 3, 4, 5, 6, 7, 12),
-          rowCallback = styleDT(6, 7, 8, 9, 10, 11, 12, 14),
-          dom = "ltip",
-          autoWidth = TRUE, scrollX = TRUE
+          rowCallback = styleDT(7, 8, 9, 10, 11, 12, 13, 15),
+          dom = "tip",
+          autoWidth = TRUE, 
+          scrollX = TRUE
         )
       )
       path <- file.path(getwd(), "www")
@@ -251,13 +294,13 @@ server <- function(input, output, session) {
     output$img <- renderHighchart({
       highchart() %>% 
         hc_title(text = paste0("Trend: ", thisTab[["Name"]][1]), style = list(color = "black")) %>% 
-        hc_xAxis(time = thisTab[["Date"]], title = list(text = "Days")) %>% 
+        hc_xAxis(time = as.Date(thisTab$Date), title = list(text = "Days")) %>% 
         hc_yAxis_multiples(
           list(top = "0%", height = "20%", title = list(text = "Point"), lineWidth = 3),
-          list(top = "20%", height = "40%", title = list(text = "Temp"), offset = 0, showFirstLabel = T, showLastLabel = T, opposite= T),
-          list(top = "40%", height = "60%", title = list(text = "SpO2"), offset = 0, showFirstLabel = T, showLastLabel = T),
-          list(top = "60%", height = "80%", title = list(text = "RR"), offset = 0, showFirstLabel = T, showLastLabel = T, opposite= T),
-          list(top = "80%", height = "100%", title = list(text = "SBP"), offset = 0, showFirstLabel = T, showLastLabel = T)
+          list(top = "20%", height = "20%", title = list(text = "Temp"), showFirstLabel = T, showLastLabel = T, opposite= T),
+          list(top = "40%", height = "20%", title = list(text = "SpO2"), showFirstLabel = T, showLastLabel = T),
+          list(top = "60%", height = "20%", title = list(text = "RR"), showFirstLabel = T, showLastLabel = T, opposite= T),
+          list(top = "80%", height = "20%", title = list(text = "SBP"), showFirstLabel = T, showLastLabel = T)
         ) %>% 
         hc_add_series(name = "Point", data = thisTab[["Point"]]) %>% 
         hc_add_series(name = "Temp", data = thisTab[["Temperature"]], yAxis = 1) %>%
@@ -266,9 +309,6 @@ server <- function(input, output, session) {
         hc_add_series(name = "SBP", data = thisTab[["BloodPressure"]], yAxis = 4) %>%
         hc_exporting(enabled = T) %>% 
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
-      
-      
-     
     })
     
   })
