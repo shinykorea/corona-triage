@@ -51,28 +51,43 @@
 - **데이터 확인** 기능: 필터링, 정렬 
 
 
-
-
 ## 프로세스
 
-- 초기 실행 창
+- 초기 실행 창 (로그인 이전)
 
-![image](https://user-images.githubusercontent.com/6457691/75626792-d40a5a80-5c0d-11ea-98ff-d35c1975e6f2.png)
-
-- Example.xlsx 업로드
-
-![image](https://user-images.githubusercontent.com/6457691/75626841-4d09b200-5c0e-11ea-9c5e-cf4ce4d18abe.png)
-
-- 임의 열 선택으로, 버튼 생성
-
-![image](https://user-images.githubusercontent.com/6457691/75626849-601c8200-5c0e-11ea-8d19-d2bb2a0636b5.png)
-
-- 버튼 클릭시, 해당 환자의 데이터를 테이블, 그래프 형태로 출력
-
-![image](https://user-images.githubusercontent.com/6457691/75626874-83473180-5c0e-11ea-827c-73645a5d56f0.png)
-
-![image](https://user-images.githubusercontent.com/6457691/75626890-a671e100-5c0e-11ea-95b9-e25c28d277be.png)
+![image](https://user-images.githubusercontent.com/6457691/75650107-59d2e800-5c98-11ea-9cb8-286a6bb67938.png)
 
 
-## 웹 
-- http://app.zarathu.com/corona/corona-triage/
+- 로그인 이후 
+
+![image](https://user-images.githubusercontent.com/6457691/75650178-9272c180-5c98-11ea-8201-5617be6607c3.png)
+
+- 기본 red color 에서 [colorna-sickbed](https://github.com/shinykorea/corona-sickbed) 와 유사하게 purple 계열로 색 교체
+
+
+- [Example.xlsx](https://github.com/shinykorea/corona-triage/blob/master/Example.xlsx) 업로드 이후
+
+![image](https://user-images.githubusercontent.com/6457691/75650595-b256b500-5c99-11ea-9ae9-4a2b01e71ad4.png)
+
+### Example.xlsx 형태 및 예시
+
+|City|Town|Place|Occurence|Confirm|Name|Sex|Age|Disease|Temperature|BreathCount|Oxygen|BloodPressure|Breath|Date|
+|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+|Char|Char|Char|Date|Date|Char|Char|Numeric|Boolean|Numeric|Numeric|Numeric|Numeric|Numeric|Date|
+|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|38.1|9|98|119|5|2020-03-01|
+|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|36.4|8|97|98|6|2020-02-29|
+|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|38.8|8|92|97|7|2020-02-28|
+|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|38.9|12|92|108|8|2020-02-27|
+|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|35.9|8|98|97|95|2020-02-26|
+
+- [파일](https://github.com/shinykorea/corona-triage/blob/master/Example.xlsx) 참조
+
+
+
+- 임의 열 선택으로 
+
+![image](https://user-images.githubusercontent.com/6457691/75650651-e92ccb00-5c99-11ea-9cd6-a861477fe944.png)
+
+- 해당 환자의 데이터를 테이블, 그래프 형태로 출력
+
+![image](https://user-images.githubusercontent.com/6457691/75650684-02357c00-5c9a-11ea-9cb3-e6af8fa11bb4.png)
