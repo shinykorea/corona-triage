@@ -107,7 +107,11 @@ ui <- material_page(
       material_row(
         height = '100%',
         material_column(
-          DT::dataTableOutput("tab2", height = '600px'),
+          material_card(
+            title = htmlOutput('pat', style = 'text-align:center'),
+            divider = TRUE,
+            DT::dataTableOutput("tab2", height = '600px')
+          ),
           width = 6
         ),
         material_column(
@@ -270,19 +274,38 @@ server <- function(input, output, session) {
     
     selected <- input$tab1_rows_selected # check none selected
     thisTab <- tab %>% filter(Name == newtab$Name[selected])
+    
+    output$pat <- renderText(
+      paste0(
+        HTML('<i class = "material-icons" style= "font-size : 2.5rem">face</i> '), # icon
+        thisTab$Name[1], ' / ', # name
+        thisTab$Sex[1], ' / ', # sex
+        'Confirmed in ', thisTab$Confirm[1], ' / ', # confirmed
+        thisTab$Town[1], ' / ', # town
+        thisTab$Place[1]
+      )
+    )
+    
     output$tab2 <- renderDataTable({
-      dtobj <- datatable(
-        thisTab,
-        rownames = FALSE,
-        selection = "none",
-        caption = paste0(thisTab[["Name"]][1], ": 시설"),
-        options = list(
-          rowsGroup = list(0, 1, 2, 3, 4, 5, 6, 7, 12),
-          rowCallback = styleDT(7, 8, 9, 10, 11, 12, 13, 15),
-          dom = "tip",
-          autoWidth = TRUE, 
-          scrollX = TRUE
-        )
+      dtobj <- formatStyle(
+        datatable(
+          thisTab[,-(1:7)],
+          rownames = FALSE,
+          selection = "none",
+          options = list(
+            rowsGroup = list(0, 1), # Age, Disease
+            rowCallback = styleDT(0, 1, 2, 3, 4, 5, 6, 8),
+            dom = "tip",
+            autoWidth = TRUE, 
+            order = list(list(7, "desc")),
+            scrollX = TRUE,
+            initComplete = htmlwidgets::JS(
+              "function(settings, json) {",
+              "$(this.api().table().header()).css({'font-size': '0.8em'});",
+              "}")
+          )
+        ),
+        columns = 1:9, fontSize = '0.8em'
       )
       path <- file.path(getwd(), "www")
       dep <- htmltools::htmlDependency(
@@ -293,6 +316,8 @@ server <- function(input, output, session) {
       dtobj$dependencies <- c(dtobj$dependencies, list(dep))
       dtobj
     })
+    
+    
     
     output$img <- renderHighchart({
       highchart() %>% 
