@@ -148,63 +148,103 @@ ui <- material_page(
 # d1c4e9 purple 2
 # b39ddb purple 3
 
+getColor = function(Data, Type){
+  col1 = '#FFC312' # yellow #FFC312
+  col2 = '#EA2027' # red #EA2027
+  col3 = '#6F1E51' # purple #6F1E51
+  colBasic = '#A3CB38' # Green #A3CB38
+  if(Type == 'Point'){
+    res = 
+      sapply(Data, function(i){
+        v = colBasic
+        if(i > 5) v = col1
+        if(i > 10) v = col2
+        if(i > 15) v = col3
+        return(v)
+      },USE.NAMES = FALSE)
+  }
+  if(Type=='Temperature'){
+    res = 
+      sapply(Data, function(i){
+        v = colBasic
+        if(i <= 36) v = col1
+        if(i >= 37.5) v = col1
+        if(i > 38) v = col2
+        if(i > 39) v = col3
+        return(v)
+      },USE.NAMES = FALSE)
+  }
+  if(Type=='Oxygen'){
+    res = 
+      sapply(Data, function(i){
+        v = colBasic
+        if(i <= 95) v = col1
+        if(i <= 93) v = col2
+        if(i <= 91) v = col3
+        return(v)
+      },USE.NAMES = FALSE)
+  }
+  if(Type=='BreathCount'){
+    res = 
+      sapply(Data, function(i){
+        v = colBasic
+        if(i <= 11) v = col1
+        if(i <= 8) v = col3
+        return(v)
+      },USE.NAMES = FALSE)
+  }
+  if(Type=='BloodPressure'){
+    res = 
+      sapply(Data, function(i){
+        v = colBasic
+        if(i <=110) v = col1
+        if(i <=100) v = col2
+        if(i <=90) v = col3
+        return(v)
+      },USE.NAMES = FALSE)
+  }
+  
+  return(data.frame(y = Data, color = res))
+}
+
 styleDT <- function(age, disease, temperature, count, oxygen, pressure, breath, point) {
   col1 = '#ede7f6'
   col2 = '#d1c4e9'
   col3 = '#b39ddb'
   JS(paste0("function(row, data, index){
             // Age 
-            if(data[", age, "] > 60){$(row).find('td:eq(", age, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
-            if(data[", age, "] > 70){$(row).find('td:eq(", age, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
-            if(data[", age, "] > 80){$(row).find('td:eq(", age, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
             if(data[", age, "] > 60){$(row).find('td:eq(", age, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
             if(data[", age, "] > 70){$(row).find('td:eq(", age, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
             if(data[", age, "] > 80){$(row).find('td:eq(", age, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // Diesease
-            if(data[", disease, "]){$(row).find('td:eq(", disease, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
+            
             if(data[", disease, "]){$(row).find('td:eq(", disease, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // Temperature
-            if(data[", temperature, "] <= 36 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
-            if(data[", temperature, "] >= 37.5 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
-            if(data[", temperature, "] > 38){$(row).find('td:eq(", temperature, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
-            if(data[", temperature, "] > 39){$(row).find('td:eq(", temperature, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
             if(data[", temperature, "] <= 36 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
             if(data[", temperature, "] >= 37.5 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
             if(data[", temperature, "] > 38){$(row).find('td:eq(", temperature, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
             if(data[", temperature, "] > 39){$(row).find('td:eq(", temperature, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
         
             // BreathCount    
-            if(data[", count, "] <= 11){$(row).find('td:eq(", count, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
-            if(data[", count, "] <= 8){$(row).find('td:eq(", count, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
             if(data[", count, "] <= 11){$(row).find('td:eq(", count, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
             if(data[", count, "] <= 8){$(row).find('td:eq(", count, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // Oxygen
-            if(data[", oxygen, "] <= 95){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
-            if(data[", oxygen, "] <= 93){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
-            if(data[", oxygen, "] <= 91){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
             if(data[", oxygen, "] <= 95){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
             if(data[", oxygen, "] <= 93){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
             if(data[", oxygen, "] <= 91){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // BloodPressure
-            if(data[", pressure, "] <= 110){$(row).find('td:eq(", pressure, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
-            if(data[", pressure, "] <= 100){$(row).find('td:eq(", pressure, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
-            if(data[", pressure, "] <= 90){$(row).find('td:eq(", pressure, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
             if(data[", pressure, "] <= 110){$(row).find('td:eq(", pressure, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
             if(data[", pressure, "] <= 100){$(row).find('td:eq(", pressure, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
             if(data[", pressure, "] <= 90){$(row).find('td:eq(", pressure, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
             
             // Breath
-            if(data[", breath, "]){$(row).find('td:eq(", breath, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
             if(data[", breath, "]){$(row).find('td:eq(", breath, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
             
             // Point
-            if(data[", point, "] > 5){$(row).find('td:eq(", point, ")').css({'background-color' : '#ffffc0', 'font-size' : '1.2em'});}
-            if(data[", point, "] > 10){$(row).find('td:eq(", point, ")').css({'background-color' : '#ffbb85', 'font-size' : '1.5em'});}
-            if(data[", point, "] > 15){$(row).find('td:eq(", point, ")').css({'background-color' : '#ff8686', 'font-size' : '1.8em'});}
             if(data[", point, "] > 5){$(row).find('td:eq(", point, ")').css({'background-color' : '",col1,"', 'font-size' : '1.2em'});}
             if(data[", point, "] > 10){$(row).find('td:eq(", point, ")').css({'background-color' : '",col2,"', 'font-size' : '1.5em'});}
             if(data[", point, "] > 15){$(row).find('td:eq(", point, ")').css({'background-color' : '",col3,"', 'font-size' : '1.8em'});}
@@ -317,8 +357,6 @@ server <- function(input, output, session) {
       dtobj
     })
     
-    
-    
     output$img <- renderHighchart({
       highchart() %>% 
         hc_title(text = paste0("Trend: ", thisTab[["Name"]][1]), style = list(color = "black")) %>% 
@@ -330,11 +368,11 @@ server <- function(input, output, session) {
           list(top = "60%", height = "20%", title = list(text = "RR"), showFirstLabel = T, showLastLabel = T, opposite= T),
           list(top = "80%", height = "20%", title = list(text = "SBP"), showFirstLabel = T, showLastLabel = T)
         ) %>% 
-        hc_add_series(name = "Point", data = thisTab[["Point"]]) %>% 
-        hc_add_series(name = "Temp", data = thisTab[["Temperature"]], yAxis = 1) %>%
-        hc_add_series(name = "SpO2", data = thisTab[["Oxygen"]], yAxis = 2) %>%
-        hc_add_series(name = "RR", data = thisTab[["BreathCount"]], yAxis = 3) %>%
-        hc_add_series(name = "SBP", data = thisTab[["BloodPressure"]], yAxis = 4) %>%
+        hc_add_series(name = "Point", data = getColor(thisTab$Point,'Point'), marker = list(radius = 8)) %>% 
+        hc_add_series(name = "Temp", data = getColor(thisTab$Temperature, 'Temperature'), marker = list(radius = 8), yAxis = 1) %>%
+        hc_add_series(name = "SpO2", data = getColor(thisTab$Oxygen, 'Oxygen'), marker = list(radius = 8), yAxis = 2) %>%
+        hc_add_series(name = "RR", data = getColor(thisTab$BreathCount,'BreathCount'), marker = list(radius = 8), yAxis = 3) %>%
+        hc_add_series(name = "SBP", data = getColor(thisTab$BloodPressure, 'BloodPressure'), marker = list(radius = 8), yAxis = 4) %>%
         hc_exporting(enabled = T) %>% 
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
     })
