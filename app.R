@@ -55,7 +55,7 @@ triage <- function(v) {
 ui <- material_page(
   nav_bar_color = 'deep-purple lighten-1',
   color = '#311b92',
-  title = "corona-triage",
+  title = "corona-triage <a href = 'https://github.com/shinykorea/corona-triage' target='_blank'> <i class='material-icons' style = 'font-size:1.3em;'> info </i> </a>",
   useShinyjs(),
   tags$head(tags$style(type = "text/css", "table.dataTable tr.selected td, table.dataTable td.selected {background-color: #d1c4e9 !important;}")),
   tags$head(tags$style(type = "text/css", "th, td {text-align:center !important;}")),
