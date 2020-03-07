@@ -91,3 +91,7 @@
 - 해당 환자의 데이터를 테이블, 그래프 형태로 출력
 
 ![image](https://user-images.githubusercontent.com/6457691/75650684-02357c00-5c9a-11ea-9cb3-e6af8fa11bb4.png)
+
+
+## 웹 	
+- http://app.zarathu.com/corona/corona-triage/

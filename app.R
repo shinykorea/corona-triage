@@ -83,7 +83,10 @@ ui <- material_page(
         width = 6,
         material_card(
           depth = 3,
-          fileInput(inputId = "file", label = "엑셀(xlsx) 업로드", accept = ".xlsx", multiple = FALSE),
+          fileInput(inputId = "file", 
+                    label = tags$a(href="https://github.com/shinykorea/corona-triage/blob/master/Example.xlsx?raw=true", tags$div(HTML(paste("엑셀(xlsx)", tags$span(style="color:black", "업로드"), sep = "")))), 
+                    accept = ".xlsx", 
+                    multiple = FALSE),
           DT::dataTableOutput("tab1"),
         )
       ),
@@ -131,7 +134,7 @@ ui <- material_page(
 )
 
 # Wrap your UI with secure_app
-ui <- secure_app(ui, enable_admin = T)
+#ui <- secure_app(ui, enable_admin = T)  개발땐 생략, 배포시 적용
 
 # f7d794 YELLOW  1 #ffffc0
 # f19066 ORANGE  2 #ffbb85
