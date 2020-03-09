@@ -80,7 +80,7 @@ ui <- material_page(
     tags$h1("자가"),
     material_row(
       material_column(
-        width = 6,
+        width = 7,
         material_card(
           depth = 3,
           fileInput(inputId = "file", 
@@ -91,7 +91,7 @@ ui <- material_page(
         )
       ),
       material_column(
-        width = 6,
+        width = 5,
         material_card(
           tags$h2("시군구 지도 필요"),
           p("자가: 시군구 보건소에서 매일 데이터 보내주는 시나리오."),
@@ -112,11 +112,11 @@ ui <- material_page(
             divider = TRUE,
             DT::dataTableOutput("tab2", height = '600px')
           ),
-          width = 6
+          width = 7
         ),
         material_column(
           highchartOutput("img", height = '600px'), 
-          width = 6
+          width = 5
         )
       ),
       div(style = "height:3em;")
@@ -155,7 +155,7 @@ getColor = function(Data, Type){
   colBasic = '#A3CB38' # Green #A3CB38
   if(Type == 'Point'){
     res = 
-      sapply(Data, function(i){
+      sapply(Data[[Type]], function(i){
         v = colBasic
         if(i > 5) v = col1
         if(i > 10) v = col2
@@ -165,7 +165,7 @@ getColor = function(Data, Type){
   }
   if(Type=='Temperature'){
     res = 
-      sapply(Data, function(i){
+      sapply(Data[[Type]], function(i){
         v = colBasic
         if(i <= 36) v = col1
         if(i >= 37.5) v = col1
@@ -176,7 +176,7 @@ getColor = function(Data, Type){
   }
   if(Type=='Oxygen'){
     res = 
-      sapply(Data, function(i){
+      sapply(Data[[Type]], function(i){
         v = colBasic
         if(i <= 95) v = col1
         if(i <= 93) v = col2
@@ -186,7 +186,7 @@ getColor = function(Data, Type){
   }
   if(Type=='BreathCount'){
     res = 
-      sapply(Data, function(i){
+      sapply(Data[[Type]], function(i){
         v = colBasic
         if(i <= 11) v = col1
         if(i <= 8) v = col3
@@ -195,7 +195,7 @@ getColor = function(Data, Type){
   }
   if(Type=='BloodPressure'){
     res = 
-      sapply(Data, function(i){
+      sapply(Data[[Type]], function(i){
         v = colBasic
         if(i <=110) v = col1
         if(i <=100) v = col2
@@ -204,7 +204,7 @@ getColor = function(Data, Type){
       },USE.NAMES = FALSE)
   }
   
-  return(data.frame(y = Data, color = res))
+  return(data.frame(Date = Data$Date, y = Data[[Type]], color = res))
 }
 
 styleDT <- function(age, disease, temperature, count, oxygen, pressure, breath, point) {
@@ -296,7 +296,7 @@ server <- function(input, output, session) {
         dom = "tip",
         autoWidth = TRUE,
         order = list(list(10, "desc")),
-        scrollX = TRUE
+        scrollX = T
       ),
       selection = "single",
       filter = "top",
@@ -358,9 +358,8 @@ server <- function(input, output, session) {
     })
     
     output$img <- renderHighchart({
-      highchart() %>% 
-        hc_title(text = paste0("Trend: ", thisTab[["Name"]][1]), style = list(color = "black")) %>% 
-        hc_xAxis(time = as.Date(thisTab$Date), title = list(text = "Days")) %>% 
+      highchart() %>%
+        hc_xAxis(type = "datetime", title = list(text = "Day")) %>% 
         hc_yAxis_multiples(
           list(top = "0%", height = "20%", title = list(text = "Point"), lineWidth = 3),
           list(top = "20%", height = "20%", title = list(text = "Temp"), showFirstLabel = T, showLastLabel = T, opposite= T),
@@ -368,13 +367,14 @@ server <- function(input, output, session) {
           list(top = "60%", height = "20%", title = list(text = "RR"), showFirstLabel = T, showLastLabel = T, opposite= T),
           list(top = "80%", height = "20%", title = list(text = "SBP"), showFirstLabel = T, showLastLabel = T)
         ) %>% 
-        hc_add_series(name = "Point", data = getColor(thisTab$Point,'Point'), marker = list(radius = 8)) %>% 
-        hc_add_series(name = "Temp", data = getColor(thisTab$Temperature, 'Temperature'), marker = list(radius = 8), yAxis = 1) %>%
-        hc_add_series(name = "SpO2", data = getColor(thisTab$Oxygen, 'Oxygen'), marker = list(radius = 8), yAxis = 2) %>%
-        hc_add_series(name = "RR", data = getColor(thisTab$BreathCount,'BreathCount'), marker = list(radius = 8), yAxis = 3) %>%
-        hc_add_series(name = "SBP", data = getColor(thisTab$BloodPressure, 'BloodPressure'), marker = list(radius = 8), yAxis = 4) %>%
+        hc_add_series(getColor(thisTab, "Point"), "line", hcaes(Date, y, color = color), name = "Point", marker = list(radius = 8)) %>% 
+        hc_add_series(getColor(thisTab, "Temperature"), "line", hcaes(Date, y, color = color), name = "Temp", marker = list(radius = 8), yAxis = 1) %>% 
+        hc_add_series(getColor(thisTab, "Oxygen"), "line", hcaes(Date, y, color = color), name = "SpO2", marker = list(radius = 8), yAxis = 2) %>% 
+        hc_add_series(getColor(thisTab, "BreathCount"), "line", hcaes(Date, y, color = color), name = "RR", marker = list(radius = 8), yAxis = 3) %>% 
+        hc_add_series(getColor(thisTab, "BloodPressure"), "line", hcaes(Date, y, color = color), name = "SBP", marker = list(radius = 8), yAxis = 4) %>% 
         hc_exporting(enabled = T) %>% 
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
+                     
     })
     
   })
