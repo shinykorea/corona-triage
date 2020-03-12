@@ -124,3 +124,7 @@ M 심리상태
 	W 어지러움
 	SA 감각이상
 	FE 두려움
+
+
+## 설문
+ - [설문지링크](https://forms.gle/T9hyjmJY7euhrYrS8)
