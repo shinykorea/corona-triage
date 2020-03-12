@@ -20,6 +20,20 @@ library(highcharter) ## interactive graph
 
 # create_db(credentials_data = credentials, sqlite_path = "database.sqlite")
 
+myButton <- function(inputId, label, width = NULL, onClick = NULL, ...) {
+  value <- restoreInput(id = inputId, default = NULL)
+  tags$button(
+    id = inputId, style = if (!is.null(width)) {
+      paste0("width: ", validateCssUnit(width), ";")
+    },
+    type = "button", class = "btn btn-default action-button",
+    onClick = onClick,
+    `data-val` = value, list(label),
+    ...
+  )
+}
+
+
 triage <- function(v) {
   age <- disease <- temperature <- count <- oxygen <- pressure <- breath <- 0
 
@@ -68,9 +82,7 @@ ui <- material_page(
   material_tabs(
     tabs = c(
       "자가" = "home",
-      "생활치료센터" = "facility",
-      "하급병실" = "hospital_general",
-      "상급병실" = "hospital_premium"
+      "생활치료센터" = "facility"
     ),
     color = "#311b92"
   ),
@@ -79,9 +91,20 @@ ui <- material_page(
   material_tab_content(
     tab_id = "home",
     tags$h1("자가"),
+    div( # navigator
+      material_column(
+        myButton(inputId = 'totab1',label = 'tab1',onClick = 'location.href = "#tab1"'),
+        myButton(inputId = 'tomap',label = 'map',onClick = 'location.href = "#map"'),
+        myButton(inputId = 'totab2',label = 'tab2',onClick = 'location.href = "#tab2"'),
+        myButton(inputId = 'toimg',label = 'img',onClick = 'location.href = "#img"'),
+        ),
+      id = 'home_navigator',
+      style = 'position:fixed;bottom:3em;width:100%;z-index:999;'
+      
+    ),
     material_row(
       material_column(
-        width = 7,
+        width = 12,
         material_card(
           depth = 3,
           fileInput(
@@ -95,47 +118,41 @@ ui <- material_page(
         )
       ),
       material_column(
-        width = 5,
+        width = 12,
         material_card(
-          tags$h2("시군구 지도 필요"),
+          tags$h2("시군구 지도 필요", id = 'map'),
           p("자가: 시군구 보건소에서 매일 데이터 보내주는 시나리오."),
           p("우리는 데이터를 받아서 당일 업데이트 현황을 지도에 보여줘야 함."),
-          p("예) 당일 업데이트된 사람 60%, 50% 미만이면 빨간색")
+          p("예) 당일 업데이트된 사람 60%, 50% 미만이면 빨간색"),
+          depth = 3
         )
       )
     ),
 
-    material_card(
-      depth = 4,
-      material_row(
-        height = "100%",
-        material_column(
-          material_card(
-            title = htmlOutput("pat", style = "text-align:center"),
-            divider = TRUE,
-            DT::dataTableOutput("tab2")
-          ),
-          width = 7
+    material_row(
+      height = "100%",
+      material_column(
+        material_card(
+          title = htmlOutput("pat", style = "text-align:center"),
+          divider = TRUE,
+          DT::dataTableOutput("tab2")
         ),
-        material_column(
-          highchartOutput("img", height = "600px"),
-          width = 5
-        )
+        width = 12
       ),
-      div(style = "height:3em;")
-    )
+      material_column(
+        material_card(
+          highchartOutput("img", height = "600px"),
+          depth = 3
+        ),
+        width = 12
+      )
+    ),
+    div(style = "height:3em;")
+  
   ),
   material_tab_content(
     tab_id = "facility",
     tags$h2("생활치료센터")
-  ),
-  material_tab_content(
-    tab_id = "hospital_general",
-    tags$h2("상급병실")
-  ),
-  material_tab_content(
-    tab_id = "hospital_premium",
-    tags$h2("하급병실")
   )
 )
 
