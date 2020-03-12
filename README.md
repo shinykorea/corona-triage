@@ -95,3 +95,32 @@
 
 ## 웹 	
 - http://app.zarathu.com/corona/corona-triage/
+
+
+## 약자
+
+A 나이
+D 기저질병
+T 체온
+CF 심폐기능
+	HB 호흡곤란
+		DHB 심한 호흡곤란
+		CP 가슴통증
+		F 실신
+		C 고열-몸살-기침
+		BL 파란입술
+		HHB 호흡곤란심화
+	O 산호포화도
+	BC 호흡수
+	P 맥박
+CO 의식
+M 심리상태
+	PO 두근거림
+	PE 발한
+	TR 몸떨림
+	CH 질식
+	CC 가슴불편
+	AC 복부불편
+	W 어지러움
+	SA 감각이상
+	FE 두려움
