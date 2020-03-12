@@ -6,7 +6,7 @@ library(lubridate)
 library(dplyr)
 
 ui <- fluidPage(
-  headerPanel("Corona19 Patient Daily Survay"),
+  headerPanel("Corona19 Patient Daily Survey"),
   uiOutput("controls"),
   mainPanel(
     dataTableOutput(outputId = 'tab1') 
