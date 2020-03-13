@@ -495,10 +495,11 @@ server <- function(input, output, session) {
                       paste0(i[5:6],collapse = ''),'-',
                       paste0(i[7:8], collapse = '') ), origin='1970-01-01')
   }
-  data.frame(Date = lapply(gtab$date, asDate))
+  #data.frame(Date = lapply(gtab$datetime, asDate))
   D = c()
   
-  gtab$date = transform(data.frame(Date = gtab$date), Date = as.Date(as.character(Date), "%Y%m%d"))
+  gtab$datetime <- lubridate::ymd_hm(gtab$datetime)
+  #gtab$date = transform(data.frame(Date = gtab$date), Date = as.Date(as.character(Date), "%Y%m%d"))
   
   
   gtab$sex = as.factor(gtab$sex)
@@ -533,7 +534,7 @@ server <- function(input, output, session) {
     rename(A = age) %>%
     rename(Name = name) %>%
     rename(Place = res_center) %>%
-    rename(Date = date) %>% 
+    rename(Date = datetime) %>% 
     rename(T = temperature) %>%
     rename(D = disease) %>%
     rename(Confirm = confirmdate)
@@ -616,20 +617,15 @@ server <- function(input, output, session) {
     
     output$img2 <- renderHighchart({
       thisTab = tt
+      thisTab$Date <- datetime_to_timestamp(thisTab$Date)
       highchart() %>%
         hc_xAxis(type = "datetime", title = list(text = "Day")) %>%
         hc_yAxis_multiples(
-          list(top = "0%", height = "20%", title = list(text = "TRI"), lineWidth = 3),
-          list(top = "20%", height = "20%", title = list(text = "T"), showFirstLabel = T, showLastLabel = T, opposite = T),
-          list(top = "40%", height = "20%", title = list(text = "PCF"), showFirstLabel = T, showLastLabel = T),
-          list(top = "60%", height = "20%", title = list(text = "PM"), showFirstLabel = T, showLastLabel = T, opposite = T),
-          list(top = "80%", height = "20%", title = list(text = "PCO"), showFirstLabel = T, showLastLabel = T)
+          list(top = "0%", height = "50%", title = list(text = "TRI"), lineWidth = 3),
+          list(top = "50%", height = "50%", title = list(text = "T"), showFirstLabel = T, showLastLabel = T, opposite = T)
         ) %>%
-        hc_add_series(getColor(thisTab, "TRI"), "line", hcaes(Date, y, color = color), name = "TRI", marker = list(radius = 8)) %>%
-        hc_add_series(getColor(thisTab, "T"), "line", hcaes(Date, y, color = color), name = "T", marker = list(radius = 8), yAxis = 1) %>%
-        hc_add_series(getColor(thisTab, "PCF"), "line", hcaes(Date, y, color = color), name = "PCF", marker = list(radius = 8), yAxis = 2) %>%
-        hc_add_series(getColor(thisTab, "PM"), "line", hcaes(Date, y, color = color), name = "PM", marker = list(radius = 8), yAxis = 3) %>%
-        hc_add_series(getColor(thisTab, "PCO"), "line", hcaes(Date, y, color = color), name = "PCO", marker = list(radius = 8), yAxis = 4) %>%
+        hc_add_series(getColor(thisTab, "TRI"), "line", hcaes(Date, y, color = color), name = "TRI", marker = list(radius = 8)) %>% 
+        hc_add_series(getColor(thisTab, "T"), "line", hcaes(Date, y, color = color), name = "T", marker = list(radius = 8), yAxis = 1) %>% 
         hc_exporting(enabled = T) %>%
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
     })
