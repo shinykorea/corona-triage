@@ -4,6 +4,8 @@ library(googlesheets4)
 library(DT)
 library(lubridate)
 library(dplyr)
+library(gargle) # encode
+# install with remotes::install_github("r-lib/gargle")
 
 ui <- fluidPage(
   headerPanel("Corona19 Patient Daily Survey"),
