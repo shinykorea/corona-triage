@@ -9,6 +9,8 @@ library(ggplot2)
 library(gridExtra)
 library(shinymanager) ## login
 library(highcharter) ## interactive graph
+library(googlesheets4) # google sheets
+library(gargle) # googlesheets encoding
 
 ## Make login DB
 
@@ -109,10 +111,12 @@ ui <- function(){
     tags$head(tags$style(type = "text/css", ".container-fab {height: 3em; background-color: #7e57c2;}")),
     tags$head(tags$style(type = "text/css", ".btn.btn-default.action-button.buttons-fab.shiny-bound-input { background-color: #b388ff;}")),
     tags$head(tags$style(type = "text/css", ".tabs .tab a, .tabs .tab a:hover, .tabs .tab a.active {font-size:1.5em; color : #311b92;}")),
+    
     material_tabs(
       tabs = c(
         "자가" = "home",
-        "생활치료센터" = "facility"
+        "생활치료센터" = "facility",
+        "구글시트예시" = 'google'
       ),
       color = "#311b92"
     ),
@@ -124,7 +128,6 @@ ui <- function(){
       div( # navigator
         material_column(
           myButton(inputId = 'totab1',label = 'tab1',onClick = 'location.href = "#tab1"'),
-          myButton(inputId = 'tomap',label = 'map',onClick = 'location.href = "#map"'),
           myButton(inputId = 'totab2',label = 'tab2',onClick = 'location.href = "#tab2"'),
           myButton(inputId = 'toimg',label = 'img',onClick = 'location.href = "#img"'),
         ),
@@ -137,26 +140,9 @@ ui <- function(){
           width = 12,
           material_card(
             depth = 3,
-            fileInput(
-              inputId = "file",
-              label = tags$a(href = "https://github.com/shinykorea/corona-triage/blob/master/Example.xlsx?raw=true", tags$div(HTML(paste("엑셀(xlsx)", tags$span(style = "color:black", "업로드"), sep = "")))),
-              accept = ".xlsx",
-              multiple = FALSE
-            ),
-            
             DT::dataTableOutput("tab1", width = "100%")
           )
         ),
-        material_column(
-          width = 12,
-          material_card(
-            tags$h2("시군구 지도 필요", id = 'map'),
-            p("자가: 시군구 보건소에서 매일 데이터 보내주는 시나리오."),
-            p("우리는 데이터를 받아서 당일 업데이트 현황을 지도에 보여줘야 함."),
-            p("예) 당일 업데이트된 사람 60%, 50% 미만이면 빨간색"),
-            depth = 3
-          )
-        )
       ),
       
       material_row(
@@ -189,11 +175,44 @@ ui <- function(){
     material_tab_content(
       tab_id = "facility",
       tags$h2("생활치료센터")
+    ),
+    
+    material_tab_content(
+      tab_id = "google",
+      tags$h2("구글시트예시"),
+      material_row(
+        material_column(
+          width = 12,
+          material_card(
+            title = 'date',
+            depth = 3,
+            material_row(
+              material_column(
+                shinymaterial::material_date_picker(input_id = 'date1', label = 'From'),
+                width = 6
+              ),
+              material_column(
+                shinymaterial::material_date_picker(input_id = 'date2', label = 'Until'),
+                width = 6
+              ),
+              material_button('dateapply', 'apply', icon = 'access_time')
+            )
+          )
+        ),
+        material_column(
+          width = 12,
+          material_card(
+            title='gtab',
+            depth = 3,
+            DT::dataTableOutput("tab_google", width = "100%"),
+          )
+        )
+        
+      )
     )
   )
 }
   
-
 # Wrap your UI with secure_app
 # ui <- secure_app(ui, enable_admin = T)  개발땐 생략, 배포시 적용
 
@@ -306,6 +325,9 @@ styleDT <- function(age, disease, temperature, count, oxygen, pressure, breath, 
 
 server <- function(input, output, session) {
 
+  # deauthorize google sheets
+  sheets_deauth()
+  
   ## Apply login DB
   res_auth <- secure_server(
     check_credentials = check_credentials("database.sqlite")
@@ -314,12 +336,8 @@ server <- function(input, output, session) {
   tab <- newtab <- ""
 
   output$tab1 <- renderDataTable({
-    inFile <- input$file
-    if (is.null(inFile)) {
-      return(NULL)
-    }
-
-    tab <- readxl::read_excel(inFile$datapath)
+    
+    tab <- readxl::read_xlsx('Example.xlsx')
 
     tab$Occurrence <- as.Date(tab$Occurrence)
     tab$Confirm <- as.Date(tab$Confirm)
@@ -451,6 +469,78 @@ server <- function(input, output, session) {
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
     })
   })
+  
+  
+  gtab = read_sheet("http://docs.google.com/spreadsheets/d/188LunvsxTa2zqudNwAVDj-cuVpV5jm4y-3LTaj-azQE/edit?usp=sharing")
+  names(gtab) <- c("res_time", "name", "birth", "initial_res_yn", "gender", "age", "basis_sick", "temperature", "breathe_hard_yn", "breathe_cnt", "pulse_cnt", "oxygen","bloodpressure")
+  gtab <- gtab %>% mutate(res_time = as_date(gtab$res_time), birth = as_date(gtab$birth))
+  
+  output$tab_google = renderDataTable(
+    datatable(
+      gtab,
+      escape = FALSE,
+      #caption = "전체 환자: 시설",
+      options = list(
+        #rowCallback = styleDT(3, 4, 5, 6, 7, 8, 9, 11),
+        dom = "tip"#,
+        #rowsGroup = list(8), # TRIAGE
+        #order = list(list(8, "desc"))
+      ),
+      #selection = "single",
+      filter = "top",
+      rownames = FALSE
+    )
+  )
+  
+  observeEvent(input$dateapply,{
+    if(input$dateapply==0){return(NULL)}
+    
+    asdate = function(v){
+      v = strsplit(v,' ')[[1]]
+      
+      month = v[1]
+      day = strsplit(v[2],',')[[1]][1]
+      year = as.character(v[3])
+      
+      if(month =='Jan'){month = 1}
+      if(month =='Feb'){month = 2}
+      if(month =='Mar'){month = 3}
+      if(month =='Apr'){month = 4}
+      if(month =='May'){month = 5}
+      if(month =='Jun'){month = 6}
+      if(month =='Jul'){month = 7}
+      if(month =='Aug'){month = 8}
+      if(month =='Sep'){month = 9}
+      if(month =='Oct'){month = 10}
+      if(month =='Nov'){month = 11}
+      if(month =='Dec'){month = 12}
+      month = as.character(month)
+      
+      return(as.Date.character(paste0(year,'-',month,'-',day)))
+    }
+    date1 = asdate(input$date1)
+    date2 = asdate(input$date2)
+    
+    output$tab_google = renderDataTable(
+      datatable(
+        gtab %>% filter(res_time >= date1) %>% filter(res_time <= date2),
+        escape = FALSE,
+        #caption = "전체 환자: 시설",
+        options = list(
+          #rowCallback = styleDT(3, 4, 5, 6, 7, 8, 9, 11),
+          dom = "tip"#,
+          #rowsGroup = list(8), # TRIAGE
+          #order = list(list(8, "desc"))
+        ),
+        #selection = "single",
+        filter = "top",
+        rownames = FALSE
+      )
+    )
+  })
+  
+  
+  
 }
 
 shinyApp(ui = ui(), server = server, options = list(launch.browser = TRUE))
