@@ -377,6 +377,7 @@ server <- function(input, output, session) {
     
     dtobj <- datatable(
       newtab,
+      colnames=c("장소", "이름", "성별", "나이", "체온", "심폐기능", "의식수준", "심리상태", "중증도"),
       escape = FALSE,
       #caption = "전체 환자: 시설",
       options = list(
@@ -437,6 +438,7 @@ server <- function(input, output, session) {
       dtobj <-
         datatable(
           thisTab,
+          #colnames=c("날짜", "D", "체온", "산소포화도", "호흡수", "맥박", "의식저하", "두근거림", "떨림", "숨가쁨", "질식감","가슴불편", "메스꺼움", "어지러움", "중증도"),
           rownames = FALSE,
           selection = "none",
           options = list(
@@ -462,17 +464,17 @@ server <- function(input, output, session) {
       highchart() %>%
         hc_xAxis(type = "datetime", title = list(text = "Day")) %>%
         hc_yAxis_multiples(
-          list(top = "0%", height = "20%", title = list(text = "TRI"), lineWidth = 3),
-          list(top = "20%", height = "20%", title = list(text = "T"), showFirstLabel = T, showLastLabel = T, opposite = T),
-          list(top = "40%", height = "20%", title = list(text = "O"), showFirstLabel = T, showLastLabel = T),
-          list(top = "60%", height = "20%", title = list(text = "BC"), showFirstLabel = T, showLastLabel = T, opposite = T),
-          list(top = "80%", height = "20%", title = list(text = "P"), showFirstLabel = T, showLastLabel = T)
+          list(top = "0%", height = "20%", title = list(text = "중증도"), lineWidth = 3),
+          list(top = "20%", height = "20%", title = list(text = "체온(°C)"), showFirstLabel = T, showLastLabel = T, opposite = T),
+          list(top = "40%", height = "20%", title = list(text = "산소포화도(%)"), showFirstLabel = T, showLastLabel = T),
+          list(top = "60%", height = "20%", title = list(text = "호흡수(/분)"), showFirstLabel = T, showLastLabel = T, opposite = T),
+          list(top = "80%", height = "20%", title = list(text = "맥박(/분)"), showFirstLabel = T, showLastLabel = T)
         ) %>%
-        hc_add_series(getColor(thisTab, "TRI"), "line", hcaes(Date, y, color = color), name = "TRI", marker = list(radius = 8)) %>%
-        hc_add_series(getColor(thisTab, "T"), "line", hcaes(Date, y, color = color), name = "T", marker = list(radius = 8), yAxis = 1) %>%
-        hc_add_series(getColor(thisTab, "O"), "line", hcaes(Date, y, color = color), name = "O", marker = list(radius = 8), yAxis = 2) %>%
-        hc_add_series(getColor(thisTab, "BC"), "line", hcaes(Date, y, color = color), name = "BC", marker = list(radius = 8), yAxis = 3) %>%
-        hc_add_series(getColor(thisTab, "P"), "line", hcaes(Date, y, color = color), name = "P", marker = list(radius = 8), yAxis = 4) %>%
+        hc_add_series(getColor(thisTab, "TRI"), "line", hcaes(Date, y, color = color), name = "중증도", marker = list(radius = 8)) %>%
+        hc_add_series(getColor(thisTab, "T"), "line", hcaes(Date, y, color = color), name = "체온", marker = list(radius = 8), yAxis = 1) %>%
+        hc_add_series(getColor(thisTab, "O"), "line", hcaes(Date, y, color = color), name = "산소포화도", marker = list(radius = 8), yAxis = 2) %>%
+        hc_add_series(getColor(thisTab, "BC"), "line", hcaes(Date, y, color = color), name = "호흡수", marker = list(radius = 8), yAxis = 3) %>%
+        hc_add_series(getColor(thisTab, "P"), "line", hcaes(Date, y, color = color), name = "맥박", marker = list(radius = 8), yAxis = 4) %>%
         hc_exporting(enabled = T) %>%
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
     })
@@ -551,6 +553,7 @@ server <- function(input, output, session) {
   output$tab_google = renderDataTable(
     datatable(
       gtab %>% select(Place, Name, S, A, PT, PCF, PCO, PM, TRI),
+      colnames=c("장소", "이름", "성별", "나이", "체온", "심폐기능", "의식수준", "심리상태", "중증도"),
       escape = FALSE,
       #caption = "전체 환자: 시설",
       options = list(
@@ -595,6 +598,7 @@ server <- function(input, output, session) {
       dtobj <-
         datatable(
           thisTab,
+          colnames=c("날짜", "질병", "체온", "inde_resi", "apt_resi", "고위험군", "중증도"),
           rownames = FALSE,
           selection = "none",
           options = list(
@@ -621,11 +625,11 @@ server <- function(input, output, session) {
       highchart() %>%
         hc_xAxis(type = "datetime", title = list(text = "Day")) %>%
         hc_yAxis_multiples(
-          list(top = "0%", height = "50%", title = list(text = "TRI"), lineWidth = 3),
-          list(top = "50%", height = "50%", title = list(text = "T"), showFirstLabel = T, showLastLabel = T, opposite = T)
+          list(top = "0%", height = "50%", title = list(text = "중증도"), lineWidth = 3),
+          list(top = "50%", height = "50%", title = list(text = "체온(°C)"), showFirstLabel = T, showLastLabel = T, opposite = T)
         ) %>%
-        hc_add_series(getColor(thisTab, "TRI"), "line", hcaes(Date, y, color = color), name = "TRI", marker = list(radius = 8)) %>% 
-        hc_add_series(getColor(thisTab, "T"), "line", hcaes(Date, y, color = color), name = "T", marker = list(radius = 8), yAxis = 1) %>% 
+        hc_add_series(getColor(thisTab, "TRI"), "line", hcaes(Date, y, color = color), name = "중증도", marker = list(radius = 8)) %>% 
+        hc_add_series(getColor(thisTab, "T"), "line", hcaes(Date, y, color = color), name = "체온", marker = list(radius = 8), yAxis = 1) %>% 
         hc_exporting(enabled = T) %>%
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
     })
