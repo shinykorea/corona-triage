@@ -11,6 +11,8 @@ library(shinymanager) ## login
 library(highcharter) ## interactive graph
 library(googlesheets4) # google sheets
 library(gargle) # googlesheets encoding
+library(lubridate) # date handling
+library(tibble)
 
 ## Make login DB
 
@@ -108,23 +110,23 @@ ui <- function(){
     tags$head(tags$style(type = "text/css", "html, body {height:100% !important;}")),
     tags$head(tags$style(type = "text/css", ".indicator {height:0.3em;}")),
     tags$head(tags$style(type = "text/css", "table {table-layout:fixed; width:100%;}")),
-    tags$head(tags$style(type = "text/css", ".container-fab {height: 3em; background-color: #7e57c2;}")),
+    # tags$head(tags$style(type = "text/css", ".container-fab {height: 3em; background-color: #7e57c2;}")),
     tags$head(tags$style(type = "text/css", ".btn.btn-default.action-button.buttons-fab.shiny-bound-input { background-color: #b388ff;}")),
     tags$head(tags$style(type = "text/css", ".tabs .tab a, .tabs .tab a:hover, .tabs .tab a.active {font-size:1.5em; color : #311b92;}")),
     
     material_tabs(
       tabs = c(
-        "자가" = "home",
         "생활치료센터" = "facility",
-        "구글시트예시" = 'google'
+        "자가" = "home"#,
+        #"구글시트예시" = 'google'
       ),
       color = "#311b92"
     ),
     
     # Define tab content
     material_tab_content(
-      tab_id = "home",
-      tags$h1("자가"),
+      tab_id = "facility",
+      #tags$h1("생활치료센터"),
       div( # navigator
         material_column(
           myButton(inputId = 'totab1',label = 'tab1',onClick = 'location.href = "#tab1"'),
@@ -133,14 +135,14 @@ ui <- function(){
         ),
         id = 'home_navigator',
         style = 'position:fixed;bottom:3em;width:100%;z-index:999;'
-        
       ),
       material_row(
         material_column(
           width = 12,
           material_card(
             depth = 3,
-            DT::dataTableOutput("tab1", width = "100%")
+            title ='',
+            DT::dataTableOutput("tab1")
           )
         ),
       ),
@@ -170,44 +172,44 @@ ui <- function(){
         )
       ),
       div(style = "height:3em;")
-      
     ),
     material_tab_content(
-      tab_id = "facility",
-      tags$h2("생활치료센터")
-    ),
-    
-    material_tab_content(
-      tab_id = "google",
-      tags$h2("구글시트예시"),
+      tab_id = "home",
       material_row(
         material_column(
           width = 12,
           material_card(
-            title = 'date',
+            title='',
             depth = 3,
-            material_row(
-              material_column(
-                shinymaterial::material_date_picker(input_id = 'date1', label = 'From'),
-                width = 6
-              ),
-              material_column(
-                shinymaterial::material_date_picker(input_id = 'date2', label = 'Until'),
-                width = 6
-              ),
-              material_button('dateapply', 'apply', icon = 'access_time')
-            )
-          )
-        ),
-        material_column(
-          width = 12,
-          material_card(
-            title='gtab',
-            depth = 3,
-            DT::dataTableOutput("tab_google", width = "100%"),
+            DT::dataTableOutput("tab_google"),
           )
         )
         
+      ),
+      
+      material_row(
+        height = "100%",
+        material_column(
+          material_card(
+            title = htmlOutput("pat2", style = "text-align:center"),
+            divider = TRUE,
+            DT::dataTableOutput("tab_google2")
+          ),
+          width = 12
+        ),
+        
+        material_column(
+          material_card(
+            title = HTML(paste0('Visualize among time. ',
+                                '<span style = "background-color:#EA2027">Red</span> : 3, ',
+                                '<span style = "background-color:#F79F1F">Orange</span> : 2, ',
+                                '<span style = "background-color:#FFC312">Yellow</span> : 1, ',
+                                '<span style = "background-color:#A3CB38">Green</span> : 0')),
+            highchartOutput("img2", height = "600px"),
+            depth = 3
+          ),
+          width = 12
+        )
       )
     )
   )
@@ -274,6 +276,13 @@ getColor <- function(Data, Type) {
         return(colBasic)
       }, USE.NAMES = FALSE)
   }
+  
+  res <- sapply(Data[[Type]], function(i){
+    if(i==3)return(col3)
+    if(i==2)return(col2)
+    if(i==1)return(col1)
+    return(colBasic)
+  })
 
   return(data.frame(Date = Data$Date, y = Data[[Type]], color = res))
 }
@@ -353,7 +362,7 @@ server <- function(input, output, session) {
     tab = tab %>% cbind(t(TRIS))
     
     # hide file upload
-    shinyjs::runjs('$(".form-group.shiny-input-container").hide()')
+    # shinyjs::runjs('$(".form-group.shiny-input-container").hide()')
 
     tab <<- tab
 
@@ -369,7 +378,7 @@ server <- function(input, output, session) {
     dtobj <- datatable(
       newtab,
       escape = FALSE,
-      caption = "전체 환자: 시설",
+      #caption = "전체 환자: 시설",
       options = list(
         #rowCallback = styleDT(3, 4, 5, 6, 7, 8, 9, 11),
         dom = "tip",
@@ -394,7 +403,6 @@ server <- function(input, output, session) {
     selected <- input$tab1_rows_selected # check none selected
     tt <- thisTab <- tab %>% filter(Name == newtab$Name[selected])
     
-    # print(head(thisTab))
     
     output$pat <- renderText({
       txt = paste0(
@@ -471,75 +479,161 @@ server <- function(input, output, session) {
   })
   
   
-  gtab = read_sheet("http://docs.google.com/spreadsheets/d/188LunvsxTa2zqudNwAVDj-cuVpV5jm4y-3LTaj-azQE/edit?usp=sharing")
-  names(gtab) <- c("res_time", "name", "birth", "initial_res_yn", "gender", "age", "basis_sick", "temperature", "breathe_hard_yn", "breathe_cnt", "pulse_cnt", "oxygen","bloodpressure")
-  gtab <- gtab %>% mutate(res_time = as_date(gtab$res_time), birth = as_date(gtab$birth))
+  gtab = readxl::read_excel('Example_update.xlsx') 
+  
+  # gtab = read_sheet("http://docs.google.com/spreadsheets/d/188LunvsxTa2zqudNwAVDj-cuVpV5jm4y-3LTaj-azQE/edit?usp=sharing")
+  # names(gtab) <- c("res_time", "name", "birth", "initial_res_yn", "gender", "age", "basis_sick", "temperature", "breathe_hard_yn", "breathe_cnt", "pulse_cnt", "oxygen","bloodpressure")
+  # gtab <- gtab %>% mutate(res_time = as_date(gtab$res_time), birth = as_date(gtab$birth))
+  
+  
+  gtab = gtab %>% select(-id, -birthyear) # remove id, birthyear == name and age
+  
+  asDate = function(i){
+    i = strsplit(as.character(i),'')[[1]]
+    as.Date(paste0(
+      paste0(i[1:4], collapse = ''),'-',
+                      paste0(i[5:6],collapse = ''),'-',
+                      paste0(i[7:8], collapse = '') ), origin='1970-01-01')
+  }
+  data.frame(Date = lapply(gtab$date, asDate))
+  D = c()
+  
+  gtab$date = transform(data.frame(Date = gtab$date), Date = as.Date(as.character(Date), "%Y%m%d"))
+  
+  
+  gtab$sex = as.factor(gtab$sex)
+  gtab$ori_center = as.factor(gtab$ori_center)
+  gtab$res_center = as.factor(gtab$res_center)
+  gtab$disease = as.factor(gtab$disease)
+  #gtab$num = as.factor(gtab$num)
+  gtab$dyspnea = as.factor(gtab$dyspnea)
+  gtab$mental = as.factor(gtab$mental)
+  gtab$anxiety = as.factor(gtab$anxiety)
+  gtab$inde_resi = as.factor(gtab$inde_resi)
+  gtab$apt_resi = as.factor(gtab$apt_resi)
+  gtab$highrisk_g = as.factor(gtab$highrisk_g)
+  
+  
+  getPT = function(T){
+    PT = 0
+    if(T <= 35) PT = 3 
+    if(T <= 36 || T >39) PT = max(2,PT)
+    if(T >= 38 ) PT = max(1,PT)
+    return(PT)
+  }
+  
+  gtab <- gtab %>% tibble::add_column(PT = sapply(gtab$temperature, getPT)) # PT
+  
+  gtab <- gtab %>% 
+    rename(PCF = dyspnea) %>% 
+    rename(PM = mental) %>% 
+    rename(PCO = anxiety) %>% 
+    rename(TRI = num) %>%
+    rename(S = sex) %>% 
+    rename(A = age) %>%
+    rename(Name = name) %>%
+    rename(Place = res_center) %>%
+    rename(Date = date) %>% 
+    rename(T = temperature) %>%
+    rename(D = disease) %>%
+    rename(Confirm = confirmdate)
+  
+  # remove all NA column
+  rem = c()
+  for(i in 1:ncol(gtab)){
+    if(length(which(is.na(gtab[,i]))) == nrow(gtab)) # all na
+      rem = c(rem,i)
+  }
+  
+  gtab = gtab %>% select(-rem)
   
   output$tab_google = renderDataTable(
     datatable(
-      gtab,
+      gtab %>% select(Place, Name, S, A, PT, PCF, PCO, PM, TRI),
       escape = FALSE,
       #caption = "전체 환자: 시설",
       options = list(
         #rowCallback = styleDT(3, 4, 5, 6, 7, 8, 9, 11),
-        dom = "tip"#,
-        #rowsGroup = list(8), # TRIAGE
+        dom = "tip",
+        rowsGroup = list(8)#,
         #order = list(list(8, "desc"))
       ),
-      #selection = "single",
+      selection = "single",
       filter = "top",
       rownames = FALSE
     )
   )
   
-  observeEvent(input$dateapply,{
-    if(input$dateapply==0){return(NULL)}
+  
+  observeEvent(input$tab_google_rows_selected, {
+    selected <- input$tab_google_rows_selected # check none selected
+    tt <- thisTab <- gtab %>% filter(Name == gtab$Name[selected])
     
-    asdate = function(v){
-      v = strsplit(v,' ')[[1]]
-      
-      month = v[1]
-      day = strsplit(v[2],',')[[1]][1]
-      year = as.character(v[3])
-      
-      if(month =='Jan'){month = 1}
-      if(month =='Feb'){month = 2}
-      if(month =='Mar'){month = 3}
-      if(month =='Apr'){month = 4}
-      if(month =='May'){month = 5}
-      if(month =='Jun'){month = 6}
-      if(month =='Jul'){month = 7}
-      if(month =='Aug'){month = 8}
-      if(month =='Sep'){month = 9}
-      if(month =='Oct'){month = 10}
-      if(month =='Nov'){month = 11}
-      if(month =='Dec'){month = 12}
-      month = as.character(month)
-      
-      return(as.Date.character(paste0(year,'-',month,'-',day)))
-    }
-    date1 = asdate(input$date1)
-    date2 = asdate(input$date2)
-    
-    output$tab_google = renderDataTable(
-      datatable(
-        gtab %>% filter(res_time >= date1) %>% filter(res_time <= date2),
-        escape = FALSE,
-        #caption = "전체 환자: 시설",
-        options = list(
-          #rowCallback = styleDT(3, 4, 5, 6, 7, 8, 9, 11),
-          dom = "tip"#,
-          #rowsGroup = list(8), # TRIAGE
-          #order = list(list(8, "desc"))
-        ),
-        #selection = "single",
-        filter = "top",
-        rownames = FALSE
+    output$pat2 <- renderText({
+      txt = paste0(
+        HTML('<i class = "material-icons" style= "font-size : 2.5rem">face</i> '), # icon
+        thisTab$Name[1], " / ", # name
+        thisTab$S[1], " / ", # sex
+        "Confirmed in ", thisTab$Confirm[1], " / ", # confirmed
+        #thisTab$Town[1], " / ", # town
+        thisTab$Place[1], ' / '
       )
-    )
+      if(thisTab$TRI[1]==3) txt = paste0(txt,'상급병상우선')
+      if(thisTab$TRI[1]==2) txt = paste0(txt,'병상우선')
+      if(thisTab$TRI[1]<=1) txt = paste0(txt,'가정')
+      txt
+    })
+    
+    output$tab_google2 <- renderDataTable({
+      
+      thisTab = thisTab %>% select(Date, D, T, inde_resi, apt_resi, highrisk_g, TRI)
+      
+      TRIIDX = which(colnames(thisTab)=='TRI') - 1
+      DIDX = which(colnames(thisTab)=='D') - 1
+      
+      dtobj <-
+        datatable(
+          thisTab,
+          rownames = FALSE,
+          selection = "none",
+          options = list(
+            rowsGroup = list(DIDX), # Disease
+            #rowCallback = styleDT(0, 1, 2, 3, 4, 5, 6, 8),
+            dom = "tip",
+            autoWidth = FALSE#,
+            #order = list(list(TRIIDX, "desc"))
+          )
+        )
+      path <- file.path(getwd(), "www")
+      dep <- htmltools::htmlDependency(
+        "RowsGroup", "2.0.0",
+        path,
+        script = "dataTables.rowsGroup.js"
+      )
+      dtobj$dependencies <- c(dtobj$dependencies, list(dep))
+      dtobj
+    })
+    
+    output$img2 <- renderHighchart({
+      thisTab = tt
+      highchart() %>%
+        hc_xAxis(type = "datetime", title = list(text = "Day")) %>%
+        hc_yAxis_multiples(
+          list(top = "0%", height = "20%", title = list(text = "TRI"), lineWidth = 3),
+          list(top = "20%", height = "20%", title = list(text = "T"), showFirstLabel = T, showLastLabel = T, opposite = T),
+          list(top = "40%", height = "20%", title = list(text = "PCF"), showFirstLabel = T, showLastLabel = T),
+          list(top = "60%", height = "20%", title = list(text = "PM"), showFirstLabel = T, showLastLabel = T, opposite = T),
+          list(top = "80%", height = "20%", title = list(text = "PCO"), showFirstLabel = T, showLastLabel = T)
+        ) %>%
+        hc_add_series(getColor(thisTab, "TRI"), "line", hcaes(Date, y, color = color), name = "TRI", marker = list(radius = 8)) %>%
+        hc_add_series(getColor(thisTab, "T"), "line", hcaes(Date, y, color = color), name = "T", marker = list(radius = 8), yAxis = 1) %>%
+        hc_add_series(getColor(thisTab, "PCF"), "line", hcaes(Date, y, color = color), name = "PCF", marker = list(radius = 8), yAxis = 2) %>%
+        hc_add_series(getColor(thisTab, "PM"), "line", hcaes(Date, y, color = color), name = "PM", marker = list(radius = 8), yAxis = 3) %>%
+        hc_add_series(getColor(thisTab, "PCO"), "line", hcaes(Date, y, color = color), name = "PCO", marker = list(radius = 8), yAxis = 4) %>%
+        hc_exporting(enabled = T) %>%
+        hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
+    })
   })
-  
-  
   
 }
 
