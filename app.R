@@ -277,12 +277,7 @@ getColor <- function(Data, Type) {
       }, USE.NAMES = FALSE)
   }
   
-  res <- sapply(Data[[Type]], function(i){
-    if(i==3)return(col3)
-    if(i==2)return(col2)
-    if(i==1)return(col1)
-    return(colBasic)
-  })
+  
 
   return(data.frame(Date = Data$Date, y = Data[[Type]], color = res))
 }
