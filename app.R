@@ -462,21 +462,22 @@ server <- function(input, output, session) {
     output$img <- renderHighchart({
       thisTab = tt
       highchart() %>%
-        hc_xAxis(type = "datetime", title = list(text = "Day")) %>%
+        hc_xAxis(type = "datetime", title = list(text = "Day", style=list( fontSize = "20px")), labels = list(style=list( fontSize = "20px"))) %>%
         hc_yAxis_multiples(
-          list(top = "0%", height = "20%", title = list(text = "중증도"), lineWidth = 3),
-          list(top = "20%", height = "20%", title = list(text = "체온(°C)"), showFirstLabel = T, showLastLabel = T, opposite = T),
-          list(top = "40%", height = "20%", title = list(text = "산소포화도(%)"), showFirstLabel = T, showLastLabel = T),
-          list(top = "60%", height = "20%", title = list(text = "호흡수(/분)"), showFirstLabel = T, showLastLabel = T, opposite = T),
-          list(top = "80%", height = "20%", title = list(text = "맥박(/분)"), showFirstLabel = T, showLastLabel = T)
+          list(top = "0%", height = "20%", title = list(text = "중증도", style=list( fontSize = "20px")), labels = list(style=list( fontSize = "20px")), lineWidth = 3),
+          list(top = "20%", height = "20%", title = list(text = "체온(°C)", style=list( fontSize = "20px")), labels = list(style=list( fontSize = "20px")), showFirstLabel = T, showLastLabel = T, opposite = T),
+          list(top = "40%", height = "20%", title = list(text = "산소포화도(%)", style=list( fontSize = "20px")), labels = list(style=list( fontSize = "20px")), showFirstLabel = T, showLastLabel = T),
+          list(top = "60%", height = "20%", title = list(text = "호흡수(/분)", style=list( fontSize = "20px")), labels = list(style=list( fontSize = "20px")), showFirstLabel = T, showLastLabel = T, opposite = T),
+          list(top = "80%", height = "20%", title = list(text = "맥박(/분)", style=list( fontSize = "20px")), labels = list(style=list( fontSize = "20px")), showFirstLabel = T, showLastLabel = T)
         ) %>%
         hc_add_series(getColor(thisTab, "TRI"), "line", hcaes(Date, y, color = color), name = "중증도", marker = list(radius = 8)) %>%
         hc_add_series(getColor(thisTab, "T"), "line", hcaes(Date, y, color = color), name = "체온", marker = list(radius = 8), yAxis = 1) %>%
         hc_add_series(getColor(thisTab, "O"), "line", hcaes(Date, y, color = color), name = "산소포화도", marker = list(radius = 8), yAxis = 2) %>%
         hc_add_series(getColor(thisTab, "BC"), "line", hcaes(Date, y, color = color), name = "호흡수", marker = list(radius = 8), yAxis = 3) %>%
         hc_add_series(getColor(thisTab, "P"), "line", hcaes(Date, y, color = color), name = "맥박", marker = list(radius = 8), yAxis = 4) %>%
+        hc_legend(itemStyle = list(fontSize = "20px")) %>% 
         hc_exporting(enabled = T) %>%
-        hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
+        hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T, style=list( fontSize = "20px"), headerFormat= '<span style="font-size: 20px; color: black;">{point.key}</span><br/>')
     })
   })
   
@@ -623,15 +624,16 @@ server <- function(input, output, session) {
       thisTab = tt
       thisTab$Date <- datetime_to_timestamp(thisTab$Date)
       highchart() %>%
-        hc_xAxis(type = "datetime", title = list(text = "Day")) %>%
+        hc_xAxis(type = "datetime", title = list(text = "Day", style=list( fontSize = "20px")), labels = list(style=list( fontSize = "20px"))) %>%
         hc_yAxis_multiples(
-          list(top = "0%", height = "50%", title = list(text = "중증도"), lineWidth = 3),
-          list(top = "50%", height = "50%", title = list(text = "체온(°C)"), showFirstLabel = T, showLastLabel = T, opposite = T)
+          list(top = "0%", height = "50%", title = list(text = "중증도", style=list( fontSize = "20px")), labels = list(style=list( fontSize = "20px")), lineWidth = 3),
+          list(top = "50%", height = "50%", title = list(text = "체온(°C)", style=list( fontSize = "20px")), labels = list(style=list( fontSize = "20px")), showFirstLabel = T, showLastLabel = T, opposite = T)
         ) %>%
         hc_add_series(getColor(thisTab, "TRI"), "line", hcaes(Date, y, color = color), name = "중증도", marker = list(radius = 8)) %>% 
         hc_add_series(getColor(thisTab, "T"), "line", hcaes(Date, y, color = color), name = "체온", marker = list(radius = 8), yAxis = 1) %>% 
+        hc_legend(itemStyle = list(fontSize = "20px")) %>% 
         hc_exporting(enabled = T) %>%
-        hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T)
+        hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T, style=list( fontSize = "20px"), headerFormat= '<span style="font-size: 20px; color: black;">{point.key}</span><br/>')
     })
   })
   
