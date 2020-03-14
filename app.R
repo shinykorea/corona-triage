@@ -24,6 +24,21 @@ library(tibble)
 
 # create_db(credentials_data = credentials, sqlite_path = "database.sqlite")
 
+material_infobox = function(width, offset=0, contents, Infotitle, Cardcolor){
+  material_column(
+    width = width,
+    offset = offset,
+    material_card(
+      title = HTML(
+        paste0("<span style='font-weight:bold; color:#FFF;'>", Infotitle, "</span>&nbsp;&nbsp;") # Main Title with color
+      ),
+      depth = 3,
+      color = Cardcolor,
+      HTML(paste0("<div class='text-right'><span style='font-size:28px; text-align:center; color:#FFF;'>",contents,"</span></div>"))
+    )
+  )
+}
+
 myButton <- function(inputId, label, width = NULL, onClick = NULL, ...) {
   value <- restoreInput(id = inputId, default = NULL)
   tags$button(
@@ -129,12 +144,17 @@ ui <- function(){
       #tags$h1("생활치료센터"),
       div( # navigator
         material_column(
+          myButton(inputId = 'toinfo',label = 'info',onClick = 'location.href = "#infoboxGroup"'),
           myButton(inputId = 'totab1',label = 'tab1',onClick = 'location.href = "#tab1"'),
           myButton(inputId = 'totab2',label = 'tab2',onClick = 'location.href = "#tab2"'),
           myButton(inputId = 'toimg',label = 'img',onClick = 'location.href = "#img"'),
         ),
         id = 'home_navigator',
         style = 'position:fixed;bottom:3em;width:100%;z-index:999;'
+      ),
+      material_row(
+        div(style = 'height:1em'),
+        uiOutput(outputId = 'infoboxGroup')
       ),
       material_row(
         material_column(
@@ -165,7 +185,8 @@ ui <- function(){
                          '<span style = "background-color:#F79F1F">Orange</span> : 2, ',
                          '<span style = "background-color:#FFC312">Yellow</span> : 1, ',
                          '<span style = "background-color:#A3CB38">Green</span> : 0')),
-            highchartOutput("img", height = "600px"),
+            divider = TRUE,
+            highchartOutput("img", height = "800px"),
             depth = 3
           ),
           width = 12
@@ -175,6 +196,10 @@ ui <- function(){
     ),
     material_tab_content(
       tab_id = "home",
+      material_row(
+        div(style = 'height:1em'),
+        uiOutput(outputId = 'infoboxGroup2')
+      ),
       material_row(
         material_column(
           width = 12,
@@ -282,47 +307,44 @@ getColor <- function(Data, Type) {
   return(data.frame(Date = Data$Date, y = Data[[Type]], color = res))
 }
 
-styleDT <- function(age, disease, temperature, count, oxygen, pressure, breath, point) {
-  col1 <- "#ede7f6"
-  col2 <- "#d1c4e9"
-  col3 <- "#b39ddb"
+styleDT <- function(age, temperature, breath, concious, mental, point) {
+  # 나이, 체온, 심폐기능, 의식, 심리, 중증도
+  # index 형태로 주어져야함.
+  col1 <- "#fff9c4" # light yellow
+  col2 <- "#ffa726" # orange
+  col3 <- "#ff1744" # red
+  
   JS(paste0("function(row, data, index){
             // Age 
-            if(data[", age, "] > 60){$(row).find('td:eq(", age, ")').css({'background-color' : '", col1, "', 'font-size' : '1.2em'});}
-            if(data[", age, "] > 70){$(row).find('td:eq(", age, ")').css({'background-color' : '", col2, "', 'font-size' : '1.5em'});}
-            if(data[", age, "] > 80){$(row).find('td:eq(", age, ")').css({'background-color' : '", col3, "', 'font-size' : '1.8em'});}
-            
-            // Diesease
-            
-            if(data[", disease, "]){$(row).find('td:eq(", disease, ")').css({'background-color' : '", col3, "', 'font-size' : '1.8em'});}
+            if(data[", age, "] > 60){$(row).find('td:eq(", age, ")').css({'background-color' : '", col1, "'});}
+            if(data[", age, "] > 70){$(row).find('td:eq(", age, ")').css({'background-color' : '", col2, "'});}
+            if(data[", age, "] > 80){$(row).find('td:eq(", age, ")').css({'background-color' : '", col3, "', 'color' : '#FFF'});}
             
             // Temperature
-            if(data[", temperature, "] <= 36 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col1, "', 'font-size' : '1.2em'});}
-            if(data[", temperature, "] >= 37.5 ){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col1, "', 'font-size' : '1.2em'});}
-            if(data[", temperature, "] > 38){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col2, "', 'font-size' : '1.5em'});}
-            if(data[", temperature, "] > 39){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col3, "', 'font-size' : '1.8em'});}
-        
-            // BreathCount    
-            if(data[", count, "] <= 11){$(row).find('td:eq(", count, ")').css({'background-color' : '", col1, "', 'font-size' : '1.2em'});}
-            if(data[", count, "] <= 8){$(row).find('td:eq(", count, ")').css({'background-color' : '", col3, "', 'font-size' : '1.8em'});}
-            
-            // Oxygen
-            if(data[", oxygen, "] <= 95){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '", col1, "', 'font-size' : '1.2em'});}
-            if(data[", oxygen, "] <= 93){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '", col2, "', 'font-size' : '1.5em'});}
-            if(data[", oxygen, "] <= 91){$(row).find('td:eq(", oxygen, ")').css({'background-color' : '", col3, "', 'font-size' : '1.8em'});}
-            
-            // BloodPressure
-            if(data[", pressure, "] <= 110){$(row).find('td:eq(", pressure, ")').css({'background-color' : '", col1, "', 'font-size' : '1.2em'});}
-            if(data[", pressure, "] <= 100){$(row).find('td:eq(", pressure, ")').css({'background-color' : '", col2, "', 'font-size' : '1.5em'});}
-            if(data[", pressure, "] <= 90){$(row).find('td:eq(", pressure, ")').css({'background-color' : '", col3, "', 'font-size' : '1.8em'});}
+            if(data[", temperature, "] == 1){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col1, "'});}
+            if(data[", temperature, "] == 2){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col2, "'});}
+            if(data[", temperature, "] == 3){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col3, "', 'color' : '#FFF'});}
             
             // Breath
-            if(data[", breath, "]){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col2, "', 'font-size' : '1.5em'});}
+            if(data[", breath, "] == 1){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col1, "'});}
+            if(data[", breath, "] == 2){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col2, "'});}
+            if(data[", breath, "] == 3){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col3, "', 'color' : '#FFF'});}
+            
+            // Concious
+            if(data[", concious, "] == 1 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col1, "'});}
+            if(data[", concious, "] == 2 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col2, "'});}
+            if(data[", concious, "] == 3 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col3, "', 'color' : '#FFF'});}
+            
+            // Mental
+             
+            if(data[", mental, "] == 1 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col1, "'});}
+            if(data[", mental, "] == 2 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col2, "'});}
+            if(data[", mental, "] == 3 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col3, "', 'color' : '#FFF'});}
             
             // Point
-            if(data[", point, "] > 5){$(row).find('td:eq(", point, ")').css({'background-color' : '", col1, "', 'font-size' : '1.2em'});}
-            if(data[", point, "] > 10){$(row).find('td:eq(", point, ")').css({'background-color' : '", col2, "', 'font-size' : '1.5em'});}
-            if(data[", point, "] > 15){$(row).find('td:eq(", point, ")').css({'background-color' : '", col3, "', 'font-size' : '1.8em'});}
+            if(data[", point, "] == 1 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col1, "'});}
+            if(data[", point, "] == 2 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col2, "'});}
+            if(data[", point, "] == 3 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col3, "', 'color' : '#FFF'});}
             
         }"))
 }
@@ -376,9 +398,10 @@ server <- function(input, output, session) {
       escape = FALSE,
       #caption = "전체 환자: 시설",
       options = list(
-        #rowCallback = styleDT(3, 4, 5, 6, 7, 8, 9, 11),
+        # styleDT : 나이, 체온, 심폐기능, 의식수준, 심리상태, 중증도 의 인덱스 - 1 
+        rowCallback = styleDT(3, 4, 5, 6, 7, 8),
         dom = "tip",
-        rowsGroup = list(8), # TRIAGE
+        # rowsGroup = list(8), # TRIAGE
         order = list(list(8, "desc"))
       ),
       selection = "single",
@@ -395,6 +418,45 @@ server <- function(input, output, session) {
     dtobj
   })
 
+  output$infoboxGroup = renderUI({
+    
+    aged = tab %>%
+      filter(Date == max(Date)) %>% 
+      filter(A>=60) %>% 
+      nrow()
+    
+    pat = tab %>%
+      filter(Date == max(Date)) %>% 
+      filter(TRI >=2) %>%
+      nrow()
+    
+    tagList(
+      material_infobox(width = 2,offset = 3,contents = pat ,Infotitle = '중증환자수',Cardcolor = 'pink accent-2'), # red
+      material_infobox(width = 2,contents = aged ,Infotitle = '고령자수',Cardcolor =  'teal darken-3'), # green
+      material_infobox(width = 2,contents = '20/03/14', Infotitle = '업데이트시간',Cardcolor =  'light-blue accent-3') # sky,
+    )
+  })
+  
+  #output$infoboxGroup2 = renderUI({
+    
+    #aged = gtab %>%
+      #filter(date == max(date)) %>% 
+      #filter(A>=60) %>% 
+      #nrow()
+    
+    #pat = gtab %>%
+      #filter(Date == max(Date)) %>% 
+      #filter(TRI >=2) %>%
+      #nrow()
+    
+    #tagList(
+      #material_infobox(width = 2,offset = 3,contents = pat ,Infotitle = '중증환자수',Cardcolor = 'pink accent-2'), # red
+      #material_infobox(width = 2,contents = aged ,Infotitle = '고령자수',Cardcolor =  'teal darken-3'), # green
+      #material_infobox(width = 2,contents = '20/03/14', Infotitle = '업데이트시간',Cardcolor =  'deep-purple') # purple,
+    #)
+  #})
+  
+  
   observeEvent(input$tab1_rows_selected, {
     selected <- input$tab1_rows_selected # check none selected
     tt <- thisTab <- tab %>% filter(Name == newtab$Name[selected])
