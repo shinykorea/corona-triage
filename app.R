@@ -497,7 +497,7 @@ server <- function(input, output, session) {
           rownames = FALSE,
           selection = "none",
           options = list(
-            rowsGroup = list(DIDX), # Disease
+            #rowsGroup = list(DIDX), # Disease
             #rowCallback = styleDT(0, 1, 2, 3, 4, 5, 6, 8),
             dom = "tip",
             autoWidth = FALSE,
@@ -615,8 +615,8 @@ server <- function(input, output, session) {
       #caption = "전체 환자: 시설",
       options = list(
         #rowCallback = styleDT(3, 4, 5, 6, 7, 8, 9, 11),
-        dom = "tip",
-        rowsGroup = list(8)#,
+        dom = "tip"#,
+        #rowsGroup = list(8)#,
         #order = list(list(8, "desc"))
       ),
       selection = "single",
@@ -658,7 +658,7 @@ server <- function(input, output, session) {
           rownames = FALSE,
           selection = "none",
           options = list(
-            rowsGroup = list(DIDX), # Disease
+            #rowsGroup = list(DIDX), # Disease
             #rowCallback = styleDT(0, 1, 2, 3, 4, 5, 6, 8),
             dom = "tip",
             autoWidth = FALSE#,
