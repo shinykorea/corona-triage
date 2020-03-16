@@ -1,130 +1,72 @@
-# corona-triage: Corona triage app
 
-## 목표 
+# :mask: corona-triage: Covid-19 중증도 분류 <img src = 'https://user-images.githubusercontent.com/6457691/76746412-d1d1ff80-67ba-11ea-9b19-2306531ab9a0.png' width = 120 align = 'right'></img>
 
-설문앱으로 코로나환자 중증도를 분류, 의료자원 고려한 치료전략에 도움을 준다.
-- 설문 일단 생략, 엑셀데이터 만들어졌다고 가정.
-
-
-## 설문(데이터) 에 들어갈 내용 
-
-0. 기본정보: 시도, 시군구, 증상발생/확진일 (YYYYMMDD)
-
-1. 이름 
-
-2. 성별: 남/여 
-
-3. 연령군: 0-9/10-19/20-29/30-39/40-49/50-59/60-69/70-79/80세 이상
-
-4. 기저질환: 고혈압, 당뇨, 기타 심뇌혈관질환, 만성폐쇄성폐질환(COPD), 천식, 암, 만성콩팥질환, 장기이식, 만성간질환, 면역억제제 복용
-
-5. 증상: 측정된 체온/호흡 수(RR)/산소포화도(SpO2)/수축기혈압, 주관적 숨찬 증상 유무
+<br>
+<br>
 
 
-## 중증도 점수 계산: 총 20점
+## :pushpin: 소개
 
-- 연령: 60-69세 1점, 70-79세 2점, 80세 이상 3점
+- Covid-19 확진자를 중증도에 따라 분류, 의료자원을 고려한 치료 전략에 도움을 준다.
+- Corona-triage는 경기도 코로나19 긴급대책단의 지원으로 진행되는 프로젝트입니다. 
 
-- 기저질환: 하나라도 있으면 3점
+## :memo: 중증도 분류 기준 
 
-- 체온: 35.1-36.0℃ 1점, 37.5-38.0℃ 1점, 38.1-39.0℃ 2점, 39.1℃ 이상 3점
+- [코로나바이러스감염증-19 대응지침 (중증환자용), 변형조기경고점수 (MEWS), 및 영국조기경고점수(NEWS)](http://ncov.mohw.go.kr/guideBoardView.do?brdId=3&brdGubun=35&dataGubun=&ncvContSeq=733&contSeq=733)
 
-- 호흡 수: 9-11회 1점, 8회 이하 3점 
+## :cloud: 실행 주소
+http://app.zarathu.com/corona/corona-triage/
 
-- 산소포화도: 94-95% 1점, 92-93% 2점, 91% 이하 3점
+------
 
-- 수축기혈압: 101-110mmHg 1점, 91-100mmHg 2점, 90mmHg 이하 3점
+## :bar_chart: 실행 결과 
 
-- 주관적 숨찬 증상 있으면 2점 
+![image](https://user-images.githubusercontent.com/6457691/76739631-d0e7a080-67af-11ea-9dbc-6122c31a90de.png)
 
+![image](https://user-images.githubusercontent.com/6457691/76739684-ebba1500-67af-11ea-8e09-1e24bb157967.png)
 
-## 필요기능 
+------
 
-1. **로그인**: 관계자만 볼 수 있도록, [shinymanager](https://blog.zarathu.com/posts/2019-08-25-shinymanager/) 추천
+## :art: 사용 색상 및 RGB-Hex 코드
 
-2. 환자: **일단 생략** 
-- 설문 마치면 중증도 볼 수 있음.
-- 매일 설문 수행: **매일 알림** 받을 수 있어야 함. 두 번째 설문부터는 기본정보/나이/성별 등 변하지 않는 것은 빼고 간단한 버전으로.
+- [경기도청 홈페이지 테마 색상](gg.go.kr)
 
-3. 관계자 
-- 각 환자 선택 후, 총점/측정값 변화를 볼 수 있는 **시계열 그래프**
-- **데이터 확인** 기능: 필터링, 정렬 
+![image](https://user-images.githubusercontent.com/6457691/76739706-f4aae680-67af-11ea-8dc8-419834f3e502.png)
 
+------
 
-## 프로세스
+## :blush: 기여자 (가나다순)
 
-- 초기 실행 창 (로그인 이전)
+* :octocat: 김진섭 [@jinseob2kim](https://github.com/jinseob2kim)
+* :octocat: 김진환 [@jhk0530](https://github.com/jhk0530)
+* :octocat: 탁온식 [@takos1026](https://github.com/takos1026)
 
-![image](https://user-images.githubusercontent.com/6457691/75650107-59d2e800-5c98-11ea-9cb8-286a6bb67938.png)
+------
 
+## :clipboard: Dependency (Alphabetical)
+* [dplyr](https://dplyr.tidyverse.org/) - 0.8.5
+* [DT](https://rstudio.github.io/DT/) - 0.12
+* [gargle](https://github.com/r-lib/gargle) - 0.4.0.9003
+* [ggplot2](https://ggplot2.tidyverse.org/) - 3.3.0
+* [googlesheets4](https://googlesheets4.tidyverse.org/) - 0.1.0
+* [gridExtra](https://cran.r-project.org/web/packages/gridExtra/) - 2.3
+* [highcharter](http://jkunst.com/highcharter/) - 0.7.0
+* [htmltools](https://github.com/rstudio/htmltools) - 0.4.0.9003
+* [lubridate](https://lubridate.tidyverse.org/) - 1.7.4
+* [readxl](https://readxl.tidyverse.org/) - 1.3.1
+* [shiny](https://shiny.rstudio.com/) - 1.4.0.2
+* [shinyjs](https://deanattali.com/shinyjs) - 1.1
+* [shinymanager](https://datastorm-open.github.io/shinymanager/) - 1.0.200
+* [shinymaterial](https://ericrayanderson.github.io/shinymaterial/) - 1.0.1
+* [tibble](https://tibble.tidyverse.org/) - 2.1.3
 
-- 로그인 이후 
-
-![image](https://user-images.githubusercontent.com/6457691/75650178-9272c180-5c98-11ea-8201-5617be6607c3.png)
-
-- 기본 red color 에서 [colorna-sickbed](https://github.com/shinykorea/corona-sickbed) 와 유사하게 purple 계열로 색 교체
-
-
-- [Example.xlsx](https://github.com/shinykorea/corona-triage/blob/master/Example.xlsx) 업로드 이후
-
-![image](https://user-images.githubusercontent.com/6457691/75650595-b256b500-5c99-11ea-9ae9-4a2b01e71ad4.png)
-
-### Example.xlsx 형태 및 예시
-
-|City|Town|Place|Occurence|Confirm|Name|Sex|Age|Disease|Temperature|BreathCount|Oxygen|BloodPressure|Breath|Date|
-|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-|Char|Char|Char|Date|Date|Char|Char|Numeric|Boolean|Numeric|Numeric|Numeric|Numeric|Numeric|Date|
-|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|38.1|9|98|119|5|2020-03-01|
-|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|36.4|8|97|98|6|2020-02-29|
-|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|38.8|8|92|97|7|2020-02-28|
-|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|38.9|12|92|108|8|2020-02-27|
-|경기도|수원시|경기인재개발원|2020-03-01|2020-03-01|김|남|67|TRUE|35.9|8|98|97|95|2020-02-26|
-
-- [파일](https://github.com/shinykorea/corona-triage/blob/master/Example.xlsx) 참조
-
-
-
-- 임의 열 선택으로 
-
-![image](https://user-images.githubusercontent.com/6457691/75650651-e92ccb00-5c99-11ea-9cd6-a861477fe944.png)
-
-- 해당 환자의 데이터를 테이블, 그래프 형태로 출력
-
-![image](https://user-images.githubusercontent.com/6457691/75650684-02357c00-5c9a-11ea-9cb3-e6af8fa11bb4.png)
-
-
-## 웹 	
-- http://app.zarathu.com/corona/corona-triage/
-
-
-## 약자
-
-A 나이
-D 기저질병
-T 체온
-CF 심폐기능
-	HB 호흡곤란
-		DHB 심한 호흡곤란
-		CP 가슴통증
-		F 실신
-		C 고열-몸살-기침
-		BL 파란입술
-		HHB 호흡곤란심화
-	O 산호포화도
-	BC 호흡수
-	P 맥박
-CO 의식
-M 심리상태
-	PO 두근거림
-	PE 발한
-	TR 몸떨림
-	CH 질식
-	CC 가슴불편
-	AC 복부불편
-	W 어지러움
-	SA 감각이상
-	FE 두려움
-
+------
 
 ## 설문
  - [설문지링크](https://forms.gle/T9hyjmJY7euhrYrS8)
+
+------
+
+## Contributions for Icon
+
+Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
