@@ -22,3 +22,7 @@
   font-family: 'GGTitle_B'; /* 경기천년제목 Bold */  
   src: url('Title_Bold.ttf')  format('truetype')
 }
+
+*{
+	font-family:GGTitle_L !important;
+}
