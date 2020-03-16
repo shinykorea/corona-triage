@@ -21,9 +21,9 @@ http://app.zarathu.com/corona/corona-triage/
 
 ## :bar_chart: 실행 결과 
 
-![image](https://user-images.githubusercontent.com/6457691/76739631-d0e7a080-67af-11ea-9dbc-6122c31a90de.png)
+![image](https://user-images.githubusercontent.com/6457691/76766387-4157e700-67db-11ea-9d54-2b380006fa90.png)
 
-![image](https://user-images.githubusercontent.com/6457691/76739684-ebba1500-67af-11ea-8e09-1e24bb157967.png)
+![image](https://user-images.githubusercontent.com/6457691/76766436-559be400-67db-11ea-8175-d23e5b3c5c9a.png)
 
 ------
 
