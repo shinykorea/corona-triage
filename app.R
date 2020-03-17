@@ -233,10 +233,10 @@ ui <- function() {
 # b39ddb purple 3
 
 getColor <- function(Data, Type) {
-  col1 <- "#ffed82" # yellow
+  col1 <- "#35a4c" # yellow
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
-  colBasic <- "#35bdbb" # emerald
+  colBasic <- "#35a4c6" # emerald
 
   if (Type == "중증도") {
     res <-
