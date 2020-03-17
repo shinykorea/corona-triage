@@ -25,17 +25,17 @@ library(tibble)
 # create_db(credentials_data = credentials, sqlite_path = "database.sqlite")
 
 material_infobox <- function(width, offset = 0, contents, Infotitle, Cardcolor, boxid, hover = TRUE, hide = FALSE) {
-  title <- HTML(paste0("<span style='font-weight:bold; color:#FFF;'>", Infotitle, "</span>&nbsp;&nbsp;")) # Main Title with white color
+  title <- HTML(paste0("<span style='font-weight:bold; font-size:1.2vw;margin:auto;color:#FFF;'>", Infotitle, "</span>&nbsp;&nbsp;")) # Main Title with white color
 
   box <- shiny::tags$div(
     class = "card z-depth-3",
     shiny::tags$div(
       class = "card-content action-button",
       id = boxid,
-      style = paste0("background-color:", Cardcolor, ";", ifelse(hover, "cursor:pointer;", ""), ifelse(hide, "display:none;", "")),
-      shiny::tags$span(class = "card-title", title),
+      style = paste0("background-color:", Cardcolor, "; padding : 1em; ", ifelse(hover, "cursor:pointer;", ""), ifelse(hide, "display:none;", "")),
+      shiny::tags$span(class = "card-title", style = 'text-align:center', title),
       shiny::tags$div(
-        HTML(paste0("<div style = 'text-align:center;'><span style='font-size:28px; color:#FFF;'>", contents, "</span></div>"))
+        HTML(paste0("<div style = 'text-align:center;'><span style='font-size:1.2vw; color:#FFF;'>", contents, "</span></div>"))
       )
     )
   )
@@ -77,7 +77,7 @@ triage <- function(v) {
   ##### PCO
 
   CO <- v$의식저하
-  if (!CO) PCO <- 3
+  if (CO) PCO <- 3
 
 
   return(c(PT, PCF, PCO, PM, sum(PT, PCF, PCO, PM)))
@@ -88,12 +88,14 @@ ui <- function() {
     nav_bar_color = "deep-purple lighten-1",
     color = "#311b92",
     title = paste0(
-      "corona-triage <a href = 'https://github.com/shinykorea/corona-triage' target='_blank'> ",
+      "확진자 건강관리 시스템<a href = 'https://github.com/shinykorea/corona-triage' target='_blank'> ",
       "<i class='material-icons' style = 'font-size:1.3em;'> info </i> </a>"
     ),
     useShinyjs(),
     tags$head(tags$style(type = "text/css", "table.dataTable tr.selected td, table.dataTable td.selected {background-color: #d1c4e9 !important;}")),
 
+    tags$head(HTML("<title>확진자 건강관리 시스템</title>")),
+    
     ## Change Font Here ---------------------------------------------------
     tags$head(includeCSS("www/includeGGfont.css")),
     tags$head(includeCSS("www/customcss.css")),
@@ -159,9 +161,9 @@ ui <- function() {
             title = HTML(paste0(
               "Visualize among time. ",
               '<span style = "background-color:#ff6363">　</span> : 3 ',
-              '<span style = "background-color:#f6a21c">　</span> : 2 ',
-              '<span style = "background-color:#ffed82">　</span> : 1 ',
-              '<span style = "background-color:#35bdbb">　</span> : 0'
+              '<span style = "background-color:#ff9d9d">　</span> : 2 ',
+              '<span style = "background-color:#35a4c6">　</span> : 1 ',
+              '<span style = "background-color:#35a4c6">　</span> : 0'
             )),
             divider = TRUE,
             highchartOutput("img", height = "800px"),
@@ -231,16 +233,16 @@ ui <- function() {
 # b39ddb purple 3
 
 getColor <- function(Data, Type) {
-  col1 <- "#ffed82" # yellow
-  col2 <- "#f6a21c" # orange
+  #col1 <- "#ffed82" # yellow
+  col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
-  colBasic <- "#35bdbb" # emerald
+  #colBasic <- "#35bdbb" # emerald
 
   if (Type == "중증도") {
     res <-
       sapply(Data[[Type]], function(i) {
-        v <- colBasic
-        if (i == 1) v <- col1
+        #v <- colBasic
+        #if (i == 1) v <- col1
         if (i == 2) v <- col2
         if (i >= 3) v <- col3
         return(v)
@@ -255,10 +257,10 @@ getColor <- function(Data, Type) {
         if (T <= 36 || T > 39) {
           return(col2)
         }
-        if (T >= 38) {
-          return(col1)
-        }
-        return(colBasic)
+        #if (T >= 38) {
+          #return(col1)
+        #}
+        # return(colBasic)
       }, USE.NAMES = FALSE)
   }
   if (Type == "산소포화도") {
@@ -270,7 +272,7 @@ getColor <- function(Data, Type) {
         if (O <= 95) {
           return(col2)
         }
-        return(colBasic)
+        #return(colBasic)
       }, USE.NAMES = FALSE)
   }
   if (Type == "호흡수") {
@@ -282,7 +284,7 @@ getColor <- function(Data, Type) {
         if (BC >= 21 || BC <= 11) {
           return(col2)
         }
-        return(colBasic)
+        #return(colBasic)
       }, USE.NAMES = FALSE)
   }
   if (Type == "맥박") {
@@ -297,7 +299,7 @@ getColor <- function(Data, Type) {
         if (P >= 101 || P <= 110) {
           return(col2)
         }
-        return(colBasic)
+        #return(colBasic)
       }, USE.NAMES = FALSE)
   }
 
@@ -305,85 +307,35 @@ getColor <- function(Data, Type) {
   return(data.frame(날짜 = Data[["날짜"]], y = Data[[Type]], color = res))
 }
 
-styleDT <- function(temperature, breath, concious, mental, point, change) {
-  # 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감
+styleDT <- function(point, change) {
+  # 중증도, 증감
   # index 형태로 주어져야함.
-  col1 <- "#ffed82" # yellow
-  col2 <- "#f6a21c" # orange
+  #col1 <- "#ffed82" # yellow
+  col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
   col4 <- "#91c320" # green
   JS(paste0("function(row, data, index){
-            
-            // Temperature
-            if(data[", temperature, "] == 1){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col1, "'});}
-            if(data[", temperature, "] == 2){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col2, "'});}
-            if(data[", temperature, "] == 3){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col3, "'});}
-            
-            // Breath
-            if(data[", breath, "] == 1){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col1, "'});}
-            if(data[", breath, "] == 2){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col2, "'});}
-            if(data[", breath, "] == 3){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col3, "'});}
-            
-            // Concious
-            if(data[", concious, "] == 1 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col1, "'});}
-            if(data[", concious, "] == 2 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col2, "'});}
-            if(data[", concious, "] == 3 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col3, "'});}
-            
-            // Mental
-             
-            if(data[", mental, "] == 1 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col1, "'});}
-            if(data[", mental, "] == 2 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col2, "'});}
-            if(data[", mental, "] == 3 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col3, "'});}
-            
             // Point
-            if(data[", point, "] == 1 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col1, "'});}
             if(data[", point, "] == 2 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col2, "'});}
             if(data[", point, "] >= 3 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col3, "',});}
             
             // change
-            if(data[", change, "] == '-' ){$(row).find('td:eq(", change, ")').css({'background-color' : '", col4, "'});}
-            if(data[", change, "] == '+' ){$(row).find('td:eq(", change, ")').css({'background-color' : '", col3, "',});}
-            
+            if(data[", change, "] == '-' ){$(row).find('td:eq(", change, ")').css({'color' : '", col4, "'});}
+            if(data[", change, "] == '+' ){$(row).find('td:eq(", change, ")').css({'color' : '", col3, "',});}
         }"))
 }
 
-styleDT2 <- function(temperature, breath, concious, mental, point) {
-  # 체온, 심폐지수, 의식지수, 심리지수, 중증도, 증감
+styleDT2 <- function(point) {
+  # 중증도
   # index 형태로 주어져야함.
-  col1 <- "#ffed82" # yellow
-  col2 <- "#f6a21c" # orange
+  # col1 <- "#ffed82" # yellow
+  col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
   col4 <- "#91c320" # green
   JS(paste0("function(row, data, index){
-            
-            // Temperature
-            if(data[", temperature, "] >= 38.1){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col1, "'});}
-            if(data[", temperature, "] >= 39.1){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col2, "'});}
-            if(data[", temperature, "] <= 36){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col2, "'});}
-            if(data[", temperature, "] <= 35){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col3, "'});}
-            
-            // Breath
-            if(data[", breath, "] == 1){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col1, "'});}
-            if(data[", breath, "] == 2){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col2, "'});}
-            if(data[", breath, "] == 3){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col3, "'});}
-            
-            // Concious
-            if(data[", concious, "] == 1 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col1, "'});}
-            if(data[", concious, "] == 2 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col2, "'});}
-            if(data[", concious, "] == 3 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col3, "'});}
-            
-            // Mental
-             
-            if(data[", mental, "] == 1 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col1, "'});}
-            if(data[", mental, "] == 2 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col2, "'});}
-            if(data[", mental, "] == 3 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col3, "'});}
-            
             // Point
-            if(data[", point, "] == 1 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col1, "'});}
             if(data[", point, "] == 2 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col2, "'});}
-            if(data[", point, "] == 3 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col3, "',});}
-            
-
+            if(data[", point, "] >= 3 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col3, "',});}
         }"))
 }
 
@@ -583,28 +535,33 @@ server <- function(input, output, session) {
         ifelse(lastTime2[9] == 0, "1차", "2차")
       )
 
-      lastTime <- paste0("용인센터: ", lastTime2, "<br>", "이천센터: ", lastTime1)
-
       tagList(
         material_infobox(
-          width = 2, offset = 3,
-          contents = paste0("<br>", higher, "명"),
+          width = 2, offset = 2,
+          contents = paste0(higher, "명"),
           Infotitle = "상급의료기관 배정 필요",
-          Cardcolor = "#d492b2",
+          Cardcolor = "#ff6363",
           boxid = "higherBox"
         ), # pink
         material_infobox(
-          width = 2, contents = paste0("<br>", pat, "명"),
+          width = 2, contents = paste0(pat, "명"),
           Infotitle = "의료기관 배정 필요",
-          Cardcolor = "#02adea",
+          Cardcolor = "#ff9d9d",
           boxid = "patBox"
         ), # sky
         material_infobox(
-          width = 2, contents = lastTime,
-          Infotitle = "업데이트시간",
-          Cardcolor = "#439e5b",
-          boxid = "timeBox", hover = FALSE
-        ) # green
+          width = 2, contents = lastTime2,
+          Infotitle = "업데이트시간(용인)",
+          Cardcolor = "#35a4c6",
+          boxid = "timeBox1"
+        ), # green
+        
+        material_infobox(
+          width = 2, contents = lastTime1,
+          Infotitle = "업데이트시간(이천)",
+          Cardcolor = "#35a4c6",
+          boxid = "timeBox2"
+        ) # purple
       ) 
       
     })
@@ -614,7 +571,7 @@ server <- function(input, output, session) {
       escape = FALSE,
       options = list(
         # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
-        rowCallback = styleDT(5, 6, 7, 8, 9, 10),
+        rowCallback = styleDT(9, 10),
         dom = "tip",
         order = list(list(9, "desc"))
       ),
@@ -632,6 +589,44 @@ server <- function(input, output, session) {
     dtobj
   })
 
+  observeEvent(input$timeBox1, {
+    output$tab1 <- renderDataTable(
+      datatable(
+        newtab %>% filter(센터 == '용인'),
+        escape = FALSE,
+        options = list(
+          # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
+          rowCallback = styleDT(9, 10),
+          dom = "tip",
+          order = list(list(9, "desc"))
+        ),
+        selection = "single",
+        # filter = "top",
+        rownames = FALSE
+      )
+    )
+    shinyjs::show("resetBox")
+  })
+  
+  observeEvent(input$timeBox2,{
+    output$tab1 <- renderDataTable(
+      datatable(
+        newtab %>% filter(센터 =='이천'),
+        escape = FALSE,
+        options = list(
+          # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
+          rowCallback = styleDT(9, 10),
+          dom = "tip",
+          order = list(list(9, "desc"))
+        ),
+        selection = "single",
+        # filter = "top",
+        rownames = FALSE
+      )
+    )
+    shinyjs::show("resetBox")
+  })
+  
   observeEvent(input$resetBox, { # 초기화
     output$tab1 <- renderDataTable(
       datatable(
@@ -639,7 +634,7 @@ server <- function(input, output, session) {
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
-          rowCallback = styleDT(5, 6, 7, 8, 9, 10),
+          rowCallback = styleDT(9, 10),
           dom = "tip",
           order = list(list(9, "desc"))
         ),
@@ -659,7 +654,7 @@ server <- function(input, output, session) {
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
-          rowCallback = styleDT(5, 6, 7, 8, 9, 10),
+          rowCallback = styleDT(9, 10),
           dom = "tip",
           order = list(list(9, "desc"))
         ),
@@ -678,7 +673,7 @@ server <- function(input, output, session) {
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
-          rowCallback = styleDT(5, 6, 7, 8, 9, 10),
+          rowCallback = styleDT(9, 10),
           dom = "tip",
           order = list(list(9, "desc"))
         ),
@@ -746,7 +741,7 @@ server <- function(input, output, session) {
           rownames = FALSE,
           selection = "none",
           options = list(
-            rowCallback = styleDT2(1, 2, 3, 4, 8),
+            rowCallback = styleDT2(8),
             # 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감
             dom = "tip",
             autoWidth = FALSE,
@@ -772,40 +767,40 @@ server <- function(input, output, session) {
         hc_xAxis(type = "datetime", title = list(text = "Day", style = list(fontSize = "20px")), labels = list(style = list(fontSize = "20px"))) %>%
         hc_yAxis_multiples(
           list(
-            top = "0%", height = "20%",
+            top = "0%", height = "50%",
             title = list(text = "중증도", style = list(fontSize = "20px")),
             labels = list(style = list(fontSize = "20px")), lineWidth = 3
           ),
           list(
-            top = "20%", height = "20%",
+            top = "50%", height = "50%",
             title = list(text = "체온(°C)", style = list(fontSize = "20px")),
             labels = list(style = list(fontSize = "20px")),
             showFirstLabel = T, showLastLabel = T, opposite = T
-          ),
-          list(
-            top = "40%", height = "20%",
-            title = list(text = "산소포화도(%)", style = list(fontSize = "20px")),
-            labels = list(style = list(fontSize = "20px")),
-            showFirstLabel = T, showLastLabel = T
-          ),
-          list(
-            top = "60%", height = "20%",
-            title = list(text = "호흡수(/분)", style = list(fontSize = "20px")),
-            labels = list(style = list(fontSize = "20px")),
-            showFirstLabel = T, showLastLabel = T, opposite = T
-          ),
-          list(
-            top = "80%", height = "20%",
-            title = list(text = "맥박(/분)", style = list(fontSize = "20px")),
-            labels = list(style = list(fontSize = "20px")),
-            showFirstLabel = T, showLastLabel = T
-          )
+          )#,
+          #list(
+            #top = "40%", height = "20%",
+            #title = list(text = "산소포화도(%)", style = list(fontSize = "20px")),
+            #labels = list(style = list(fontSize = "20px")),
+            #showFirstLabel = T, showLastLabel = T
+          #),
+          #list(
+            #top = "60%", height = "20%",
+            #title = list(text = "호흡수(/분)", style = list(fontSize = "20px")),
+            #labels = list(style = list(fontSize = "20px")),
+            #showFirstLabel = T, showLastLabel = T, opposite = T
+          #),
+          #list(
+            #top = "80%", height = "20%",
+            #title = list(text = "맥박(/분)", style = list(fontSize = "20px")),
+            #labels = list(style = list(fontSize = "20px")),
+            #showFirstLabel = T, showLastLabel = T
+          #)
         ) %>%
         hc_add_series(getColor(thisTab, "중증도"), "line", hcaes("날짜", y, color = color), name = "중증도", marker = list(radius = 8)) %>%
         hc_add_series(getColor(thisTab, "체온"), "line", hcaes("날짜", y, color = color), name = "체온", marker = list(radius = 8), yAxis = 1) %>%
-        hc_add_series(getColor(thisTab, "산소포화도"), "line", hcaes("날짜", y, color = color), name = "산소포화도", marker = list(radius = 8), yAxis = 2) %>%
-        hc_add_series(getColor(thisTab, "호흡수"), "line", hcaes("날짜", y, color = color), name = "호흡수", marker = list(radius = 8), yAxis = 3) %>%
-        hc_add_series(getColor(thisTab, "맥박"), "line", hcaes("날짜", y, color = color), name = "맥박", marker = list(radius = 8), yAxis = 4) %>%
+        #hc_add_series(getColor(thisTab, "산소포화도"), "line", hcaes("날짜", y, color = color), name = "산소포화도", marker = list(radius = 8), yAxis = 2) %>%
+        #hc_add_series(getColor(thisTab, "호흡수"), "line", hcaes("날짜", y, color = color), name = "호흡수", marker = list(radius = 8), yAxis = 3) %>%
+        #hc_add_series(getColor(thisTab, "맥박"), "line", hcaes("날짜", y, color = color), name = "맥박", marker = list(radius = 8), yAxis = 4) %>%
         hc_legend(itemStyle = list(fontSize = "20px")) %>%
         hc_exporting(enabled = T) %>%
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T, style = list(fontSize = "20px"), headerFormat = '<span style="font-size: 20px; color: black;">{point.key}</span><br/>')
