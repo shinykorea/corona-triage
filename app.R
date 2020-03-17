@@ -233,7 +233,7 @@ ui <- function() {
 # b39ddb purple 3
 
 getColor <- function(Data, Type) {
-  col1 <- "#35a4c" # yellow
+  col1 <- "#35a4c6" # yellow
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
   colBasic <- "#35a4c6" # emerald
