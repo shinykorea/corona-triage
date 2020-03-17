@@ -123,7 +123,14 @@ ui <- function() {
       ),
       material_row(
         div(style = "height:1em"),
-        uiOutput(outputId = "infoboxGroup")
+        uiOutput(outputId = "infoboxGroup"),
+        material_infobox(
+          width = 2, offset = 5,
+          contents = "",
+          Infotitle = "테이블 리셋",
+          Cardcolor = "#000000",
+          boxid = "resetBox", hide = TRUE
+        ) # reset
       ),
       material_row(
         material_column(
@@ -580,7 +587,7 @@ server <- function(input, output, session) {
 
       tagList(
         material_infobox(
-          width = 2, offset = 2,
+          width = 2, offset = 3,
           contents = paste0("<br>", higher, "명"),
           Infotitle = "상급의료기관 배정 필요",
           Cardcolor = "#d492b2",
@@ -597,16 +604,9 @@ server <- function(input, output, session) {
           Infotitle = "업데이트시간",
           Cardcolor = "#439e5b",
           boxid = "timeBox", hover = FALSE
-        ), # green
-
-        material_infobox(
-          width = 2,
-          contents = "",
-          Infotitle = "테이블 리셋",
-          Cardcolor = "#000000",
-          boxid = "resetBox", hide = TRUE
-        ) # reset
-      )
+        ) # green
+      ) 
+      
     })
 
     dtobj <- datatable(
