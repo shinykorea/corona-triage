@@ -24,21 +24,26 @@ library(tibble)
 
 # create_db(credentials_data = credentials, sqlite_path = "database.sqlite")
 
-material_infobox <- function(width, offset = 0, contents, Infotitle, Cardcolor) {
-  
-  title = HTML( paste0("<span style='font-weight:bold; color:#FFF;'>", Infotitle, "</span>&nbsp;&nbsp;" ) ) # Main Title with white color
+material_infobox <- function(width, offset = 0, contents, Infotitle, Cardcolor, boxid, hover = TRUE, hide = FALSE) {
+  title <- HTML(paste0("<span style='font-weight:bold; color:#FFF;'>", Infotitle, "</span>&nbsp;&nbsp;")) # Main Title with white color
+
+  box <- shiny::tags$div(
+    class = "card z-depth-3",
+    shiny::tags$div(
+      class = "card-content action-button",
+      id = boxid,
+      style = paste0("background-color:", Cardcolor, ";", ifelse(hover, "cursor:pointer;", ""), ifelse(hide, "display:none;", "")),
+      shiny::tags$span(class = "card-title", title),
+      shiny::tags$div(
+        HTML(paste0("<div style = 'text-align:center;'><span style='font-size:28px; color:#FFF;'>", contents, "</span></div>"))
+      )
+    )
+  )
+
   material_column(
     width = width,
     offset = offset,
-    shiny::tags$div(
-      class = "card z-depth-3", 
-      shiny::tags$div(
-        class = "card-content", 
-        style = paste0('background-color:' ,Cardcolor),
-        shiny::tags$span(class = "card-title", title), 
-        shiny::tags$div(
-          HTML(paste0("<div class='text-right'><span style='font-size:28px; text-align:center; color:#FFF;'>", contents, "</span></div>"))))
-      )
+    box
   )
 }
 
@@ -57,7 +62,10 @@ myButton <- function(inputId, label, width = NULL, onClick = NULL, ...) {
 
 
 triage <- function(v) {
-  PT <- PCF <- PCO <- PM <- 0
+  PT <- PCO <- 0
+
+  PCF <- v$호흡곤란
+  PM <- v$가벼운불안
 
   ##### PT
 
@@ -66,73 +74,30 @@ triage <- function(v) {
   if (T <= 36 || T > 39) PT <- max(2, PT)
   if (T >= 38) PT <- max(1, PT)
 
-  ##### PCF
-  HB <- v$호흡곤란
-  DHB <- v$심한호흡곤란
-  CP <- v$가슴통증
-  F <- v$실신
-  C <- v$고열
-  BL <- v$입술
-  HHB <- v$호흡곤란심화
-
-  if (HB) {
-    if (sum(DHB, CP, F, C, BL, HHB)) {
-      PCF <- 3
-    } else {
-      PCF <- 2
-    }
-  }
-
-  O <- v$산소포화도
-  if (O <= 93) PCF <- 3
-  if (O <= 95) PCF <- max(2, PCF)
-
-  BC <- v$호흡수
-  if (BC >= 25 || BC <= 8) PCF <- 3
-  if (BC >= 21 || BC <= 11) PCF <- max(2, PCF)
-
-  P <- v$맥박
-  if (P > 110 || P <= 40) PCF <- 3
-  if (P >= 100) PCF <- max(2, PCF)
-  if (P >= 101 || P <= 110) PCF <- max(2, PCF)
-
   ##### PCO
 
-  CO <- v$의식
+  CO <- v$의식저하
   if (!CO) PCO <- 3
 
-  ##### PM
 
-  PO <- v$두근거림
-  PE <- v$발한
-  TR <- v$몸떨림
-  CH <- v$질식
-  CC <- v$가슴불편
-  AC <- v$복부불편
-  W <- v$어지러움
-  SA <- v$감각이상
-  FE <- v$두려움
-
-  if (sum(PO, PE, TR, C, CC, AC, W, SA, FE) >= 4) {
-    PM <- 3
-  } else if (sum(PO, PE, TR, C, CC, AC, W, SA, FE) >= 1) PM <- max(1, PM)
-
-  return(c(PT, PCF, PCO, PM, max(PT, PCF, PCO, PM)))
+  return(c(PT, PCF, PCO, PM, sum(PT, PCF, PCO, PM)))
 }
 
 ui <- function() {
   material_page(
     nav_bar_color = "deep-purple lighten-1",
     color = "#311b92",
-    title = paste0("corona-triage <a href = 'https://github.com/shinykorea/corona-triage' target='_blank'> ",
-                   "<i class='material-icons' style = 'font-size:1.3em;'> info </i> </a>"),
+    title = paste0(
+      "corona-triage <a href = 'https://github.com/shinykorea/corona-triage' target='_blank'> ",
+      "<i class='material-icons' style = 'font-size:1.3em;'> info </i> </a>"
+    ),
     useShinyjs(),
     tags$head(tags$style(type = "text/css", "table.dataTable tr.selected td, table.dataTable td.selected {background-color: #d1c4e9 !important;}")),
-    
+
     ## Change Font Here ---------------------------------------------------
     tags$head(includeCSS("www/includeGGfont.css")),
     tags$head(includeCSS("www/customcss.css")),
-    
+
     material_tabs(
       tabs = c(
         "생활치료센터" = "facility",
@@ -158,7 +123,14 @@ ui <- function() {
       ),
       material_row(
         div(style = "height:1em"),
-        uiOutput(outputId = "infoboxGroup")
+        uiOutput(outputId = "infoboxGroup"),
+        material_infobox(
+          width = 2, offset = 5,
+          contents = "",
+          Infotitle = "테이블 리셋",
+          Cardcolor = "#000000",
+          boxid = "resetBox", hide = TRUE
+        ) # reset
       ),
       material_row(
         material_column(
@@ -261,7 +233,7 @@ ui <- function() {
 getColor <- function(Data, Type) {
   col1 <- "#ffed82" # yellow
   col2 <- "#f6a21c" # orange
-  col3 <- "#ff6363" # red 
+  col3 <- "#ff6363" # red
   colBasic <- "#35bdbb" # emerald
 
   if (Type == "중증도") {
@@ -270,7 +242,7 @@ getColor <- function(Data, Type) {
         v <- colBasic
         if (i == 1) v <- col1
         if (i == 2) v <- col2
-        if (i == 3) v <- col3
+        if (i >= 3) v <- col3
         return(v)
       }, USE.NAMES = FALSE)
   }
@@ -333,18 +305,14 @@ getColor <- function(Data, Type) {
   return(data.frame(날짜 = Data[["날짜"]], y = Data[[Type]], color = res))
 }
 
-styleDT <- function(age, temperature, breath, concious, mental, point) {
-  # 나이, 체온, 심폐기능, 의식, 심리, 중증도
+styleDT <- function(temperature, breath, concious, mental, point, change) {
+  # 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감
   # index 형태로 주어져야함.
   col1 <- "#ffed82" # yellow
   col2 <- "#f6a21c" # orange
   col3 <- "#ff6363" # red
-
+  col4 <- "#91c320" # green
   JS(paste0("function(row, data, index){
-            // Age 
-            if(data[", age, "] > 60){$(row).find('td:eq(", age, ")').css({'background-color' : '", col1, "'});}
-            if(data[", age, "] > 70){$(row).find('td:eq(", age, ")').css({'background-color' : '", col2, "'});}
-            if(data[", age, "] > 80){$(row).find('td:eq(", age, ")').css({'background-color' : '", col3, "', 'color' : '#FFF'});}
             
             // Temperature
             if(data[", temperature, "] == 1){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col1, "'});}
@@ -370,9 +338,63 @@ styleDT <- function(age, temperature, breath, concious, mental, point) {
             // Point
             if(data[", point, "] == 1 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col1, "'});}
             if(data[", point, "] == 2 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col2, "'});}
-            if(data[", point, "] == 3 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col3, "',});}
+            if(data[", point, "] >= 3 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col3, "',});}
+            
+            // change
+            if(data[", change, "] == '-' ){$(row).find('td:eq(", change, ")').css({'background-color' : '", col4, "'});}
+            if(data[", change, "] == '+' ){$(row).find('td:eq(", change, ")').css({'background-color' : '", col3, "',});}
             
         }"))
+}
+
+styleDT2 <- function(temperature, breath, concious, mental, point) {
+  # 체온, 심폐지수, 의식지수, 심리지수, 중증도, 증감
+  # index 형태로 주어져야함.
+  col1 <- "#ffed82" # yellow
+  col2 <- "#f6a21c" # orange
+  col3 <- "#ff6363" # red
+  col4 <- "#91c320" # green
+  JS(paste0("function(row, data, index){
+            
+            // Temperature
+            if(data[", temperature, "] >= 38.1){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col1, "'});}
+            if(data[", temperature, "] >= 39.1){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col2, "'});}
+            if(data[", temperature, "] <= 36){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col2, "'});}
+            if(data[", temperature, "] <= 35){$(row).find('td:eq(", temperature, ")').css({'background-color' : '", col3, "'});}
+            
+            // Breath
+            if(data[", breath, "] == 1){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col1, "'});}
+            if(data[", breath, "] == 2){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col2, "'});}
+            if(data[", breath, "] == 3){$(row).find('td:eq(", breath, ")').css({'background-color' : '", col3, "'});}
+            
+            // Concious
+            if(data[", concious, "] == 1 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col1, "'});}
+            if(data[", concious, "] == 2 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col2, "'});}
+            if(data[", concious, "] == 3 ){$(row).find('td:eq(", concious, ")').css({'background-color' : '", col3, "'});}
+            
+            // Mental
+             
+            if(data[", mental, "] == 1 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col1, "'});}
+            if(data[", mental, "] == 2 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col2, "'});}
+            if(data[", mental, "] == 3 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col3, "'});}
+            
+            // Point
+            if(data[", point, "] == 1 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col1, "'});}
+            if(data[", point, "] == 2 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col2, "'});}
+            if(data[", point, "] == 3 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col3, "',});}
+            
+
+        }"))
+}
+
+
+asDate <- function(i) {
+  i <- strsplit(as.character(i), "")[[1]]
+  as.Date(paste0(
+    paste0(i[1:4], collapse = ""), "-",
+    paste0(i[5:6], collapse = ""), "-",
+    paste0(i[7:8], collapse = "")
+  ), origin = "1970-01-01")
 }
 
 server <- function(input, output, session) {
@@ -390,47 +412,214 @@ server <- function(input, output, session) {
   output$tab1 <- renderDataTable({
     tab <- readxl::read_xlsx("Example.xlsx")
 
-    tab$증상발현날짜 <- as.Date(tab$증상발현날짜)
-    tab$확진날짜 <- as.Date(tab$확진날짜)
-    tab$날짜 <- as.Date(tab$날짜)
-    tab$성별 <- as.factor(tab$성별)
-    # tab$D <- as.factor(tab$D)
+    # tab$confirmdate <- as.Date(tab$confirmdate)
+    tab$date <- as.character(tab$date)
+
+    # tab$sex <- as.factor(tab$sex)
+    # tab$center <- as.factor(tab$center)
+
+    tab <- tab %>%
+      rename(확진번호 = id) %>%
+      rename(성명 = name) %>%
+      rename(성별 = sex) %>%
+      # rename(연령 = age) %>%
+      # rename(출생년도 = birthyear) %>%
+      rename(생년월일 = birthdate) %>%
+      # rename(최초인지보건소 = ori_center) %>%
+      # rename(실거주지보건소 = res_center) %>%
+      rename(확진일자 = confirmdate) %>%
+      rename(기저질환 = disease) %>%
+      rename(센터 = center) %>%
+      # rename(특수사항 = special) %>%
+      # rename(입원산소포화도 = inpt_sat) %>%
+      # rename(독립생활공간 = inde_resi) %>%
+      # rename(적절한거주지 = apt_resi) %>%
+      # rename(고위험군동거 = highrisk_g) %>%
+      rename(체온 = temperature) %>%
+      rename(호흡곤란 = dyspnea) %>%
+      rename(의식저하 = mental) %>%
+      rename(가벼운불안 = anxiety) %>%
+      rename(입력날짜 = date) %>%
+      rename(차수 = num) %>%
+      rename(호흡수 = RR) %>%
+      rename(산소포화도 = sao2) %>%
+      rename(맥박 = HR) %>%
+      # rename(중증도 = pcr) %>%
+      rename(퇴원여부 = discharge)
+
+
+    tab <- tab %>% select(-pcr) # remove pcr
+
+    ### disease decompose ---------------------------
+
+    temp <- t(sapply(tab$기저질환, function(i) {
+      res <- rep(0, 9)
+      res[as.numeric(strsplit(i, split = ",")[[1]])] <- 1
+      names(res) <- c("당뇨", "만성 신질환", "만성 간질환", "만성 폐질환", "만성 심혈관 질환", "혈액암", "항암치료 암환자", "면역억제제 복용", "HIV 환자")
+      res
+    }, USE.NAMES = FALSE))
+
+    tab <- tab %>% cbind(temp)
+
+    tab <- tab %>% select(-기저질환)
+
+    ### 중증도 계산 --------------------------------
 
     TRIS <- sapply(1:nrow(tab), function(i) {
-      triage(tab[i, ])
+      tab[i, ] %>%
+        select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
+        triage()
     })
     rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
 
     tab <- tab %>% cbind(t(TRIS))
 
-    # hide file upload
-    # shinyjs::runjs('$(".form-group.shiny-input-container").hide()')
+    ## 날짜 decompose ---------------
+
+    DATE <- sapply(1:nrow(tab), function(i) {
+      if (tab$차수[i] == 1) {
+        return(paste0(tab$입력날짜[i], "0900"))
+      }
+      return(paste0(tab$입력날짜[i], "2100"))
+    }, USE.NAMES = FALSE)
+
+
+    tab <- tab %>%
+      cbind(DATE) %>%
+      select(-입력날짜, -차수) %>%
+      rename(날짜 = DATE)
+
+    tab$날짜 <- as.character(tab$날짜)
 
     tab <<- tab
 
+    ## 증감 계산 -------------------------------------------------------------
+
+
+    # tab column name -------------------------------------------------------------------------------------------
+    # 확진번호 성명 성별 생년월일 확진일자 센터 체온 의식저하 가벼운불한 호흡곤란 산소포화도 호흡수 맥박 퇴원여부
+    # 입력날짜 차수 당뇨 만성 신질환 만성 간질환 만성 폐질환 만성 심혈관 질환 혈액암 항암치료 암환자 면역억제제 복용 HIV 환자
+    # 체온지수 심폐지수 의식지수 심리지수 중증도
+
     newtab <<- tab %>%
-      filter(날짜 == max(날짜)) %>% # recent day
-      select(장소, 이름, 성별, 나이, -도, -시, -증상발현날짜, -확진날짜, 체온지수, 심폐지수, 의식지수, 심리지수, 중증도)
+      group_by(성명) %>%
+      filter(날짜 == max(날짜)) %>% # recent data
+      select(확진번호, 성명, 생년월일, 확진일자, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
+
+    rownames(newtab) <- NULL
+
+    temp <- tab %>%
+      group_by(성명) %>%
+      top_n(2, wt = 날짜) %>%
+      select(성명, 날짜, 중증도)
+
+    newtab$성명 <- as.character(newtab$성명)
+
+    change <- sapply(unique(temp$성명), function(i) {
+      k <- temp %>% filter(성명 == i)
+      if (nrow(k) == 1) {
+        return(".")
+      } # 변화없음
+      if (k$중증도[2] == k$중증도[1]) {
+        return(".")
+      } # 변화없음
+      if (k$중증도[2] > k$중증도[1]) {
+        return("+")
+      } # 증가
+      return("-") # 감소
+    })
+
+    temp <- data.frame(성명 = names(change), 증감 = change, stringsAsFactors = FALSE, row.names = NULL)
+
+    newtab <- newtab %>% inner_join(temp)
+    newtab <- newtab %>% select(-날짜)
+    newtab <<- newtab
+
+    rm(temp)
 
     ########################
     # MERGING COLUMN  : 8  #
     # ORDER COLUMN    : 8  #
     ########################
 
+    newtab$성명 <- as.factor(newtab$성명)
+    newtab$센터 <- as.factor(newtab$센터)
+    newtab$증감 <- as.factor(newtab$증감)
+
+    output$infoboxGroup <- renderUI({
+      higher <- tab %>%
+        group_by(성명) %>%
+        filter(날짜 == max(날짜)) %>%
+        filter(중증도 >= 3) %>%
+        nrow()
+
+      pat <- tab %>%
+        group_by(성명) %>%
+        filter(날짜 == max(날짜)) %>%
+        filter(중증도 == 2) %>%
+        nrow()
+
+      lastTime1 <- tab %>%
+        filter(센터 == "이천") %>%
+        filter(날짜 == max(날짜)) %>%
+        select(날짜)
+      lastTime2 <- tab %>%
+        filter(센터 == "용인") %>%
+        filter(날짜 == max(날짜)) %>%
+        select(날짜)
+      lastTime1 <- lastTime1[, 1]
+      lastTime2 <- lastTime2[, 1]
+      lastTime1 <- strsplit(lastTime1, "")[[1]]
+      lastTime1 <- paste0(
+        paste0(lastTime1[6], collapse = ""), "월 ",
+        paste0(lastTime1[7:8], collapse = ""), "일 ",
+        ifelse(lastTime1[9] == 0, "1차", "2차")
+      )
+
+      lastTime2 <- strsplit(lastTime2, "")[[1]]
+      lastTime2 <- paste0(
+        paste0(lastTime2[6], collapse = ""), "월 ",
+        paste0(lastTime2[7:8], collapse = ""), "일 ",
+        ifelse(lastTime2[9] == 0, "1차", "2차")
+      )
+
+      lastTime <- paste0("용인센터: ", lastTime2, "<br>", "이천센터: ", lastTime1)
+
+      tagList(
+        material_infobox(
+          width = 2, offset = 3,
+          contents = paste0("<br>", higher, "명"),
+          Infotitle = "상급의료기관 배정 필요",
+          Cardcolor = "#d492b2",
+          boxid = "higherBox"
+        ), # pink
+        material_infobox(
+          width = 2, contents = paste0("<br>", pat, "명"),
+          Infotitle = "의료기관 배정 필요",
+          Cardcolor = "#02adea",
+          boxid = "patBox"
+        ), # sky
+        material_infobox(
+          width = 2, contents = lastTime,
+          Infotitle = "업데이트시간",
+          Cardcolor = "#439e5b",
+          boxid = "timeBox", hover = FALSE
+        ) # green
+      ) 
+      
+    })
+
     dtobj <- datatable(
       newtab,
-      # colnames=c("장소", "이름", "성별", "나이", "체온", "심폐기능", "의식수준", "심리상태", "중증도"),
       escape = FALSE,
-      # caption = "전체 환자: 시설",
       options = list(
-        # styleDT : 나이, 체온, 심폐기능, 의식수준, 심리상태, 중증도 의 인덱스 - 1
-        rowCallback = styleDT(3, 4, 5, 6, 7, 8),
+        # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
+        rowCallback = styleDT(5, 6, 7, 8, 9, 10),
         dom = "tip",
-        # rowsGroup = list(8), # TRIAGE
-        order = list(list(8, "desc"))
+        order = list(list(9, "desc"))
       ),
       selection = "single",
-      filter = "top",
+      # filter = "top",
       rownames = FALSE
     )
     path <- file.path(getwd(), "www")
@@ -443,22 +632,61 @@ server <- function(input, output, session) {
     dtobj
   })
 
-  output$infoboxGroup <- renderUI({
-    aged <- tab %>%
-      filter(날짜 == max(날짜)) %>%
-      filter(나이 >= 60) %>%
-      nrow()
-
-    pat <- tab %>%
-      filter(날짜 == max(날짜)) %>%
-      filter(중증도 >= 2) %>%
-      nrow()
-
-    tagList(
-      material_infobox(width = 2, offset = 3, contents = pat, Infotitle = "중증환자수", Cardcolor = "#d492b2"), # pink
-      material_infobox(width = 2, contents = aged, Infotitle = "고령자수", Cardcolor = "#439e5b"), # green
-      material_infobox(width = 2, contents = "20/03/14", Infotitle = "업데이트시간", Cardcolor = "#02adea") # sky,
+  observeEvent(input$resetBox, { # 초기화
+    output$tab1 <- renderDataTable(
+      datatable(
+        newtab,
+        escape = FALSE,
+        options = list(
+          # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
+          rowCallback = styleDT(5, 6, 7, 8, 9, 10),
+          dom = "tip",
+          order = list(list(9, "desc"))
+        ),
+        selection = "single",
+        # filter = "top",
+        rownames = FALSE
+      )
     )
+    shinyjs::hide("resetBox")
+  })
+
+  observeEvent(input$higherBox, { # 중증도 3
+    shinyjs::show("resetBox")
+    output$tab1 <- renderDataTable({
+      datatable(
+        newtab %>% filter(중증도 >= 3),
+        escape = FALSE,
+        options = list(
+          # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
+          rowCallback = styleDT(5, 6, 7, 8, 9, 10),
+          dom = "tip",
+          order = list(list(9, "desc"))
+        ),
+        selection = "single",
+        # filter = "top",
+        rownames = FALSE
+      )
+    })
+  })
+
+  observeEvent(input$patBox, { # 중증도 2
+    shinyjs::show("resetBox")
+    output$tab1 <- renderDataTable({
+      datatable(
+        newtab %>% filter(중증도 == 2),
+        escape = FALSE,
+        options = list(
+          # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
+          rowCallback = styleDT(5, 6, 7, 8, 9, 10),
+          dom = "tip",
+          order = list(list(9, "desc"))
+        ),
+        selection = "single",
+        # filter = "top",
+        rownames = FALSE
+      )
+    })
   })
 
   # output$infoboxGroup2 = renderUI({
@@ -481,38 +709,35 @@ server <- function(input, output, session) {
   # })
 
 
+  # specific table -------------------------------------------------------------
   observeEvent(input$tab1_rows_selected, {
     selected <- input$tab1_rows_selected # check none selected
-    tt <- thisTab <- tab %>% filter(이름 == newtab$이름[selected])
+    tt <- thisTab <- tab %>% filter(성명 == newtab$성명[selected])
 
+    # specific table title ----------------------------------------------------
     output$pat <- renderText({
       txt <- paste0(
         HTML('<i class = "material-icons" style= "font-size : 2.5rem">face</i> '), # icon
-        thisTab$이름[1], " / ", # name
-        thisTab$성별[1], " / ", # sex
-        thisTab$확진날짜[1], "에 확진", " / ", # confirmed
-        thisTab$시[1], " / ", # town
-        thisTab$장소[1], " / "
+        thisTab$성명[1], " / ",
+        thisTab$성별[1], " / ",
+        thisTab$생년월일[1], " / ",
+        thisTab$센터[1], "센터 / "
       )
-      if (thisTab$중증도[1] == 3) txt <- paste0(txt, "상급병상우선")
-      if (thisTab$중증도[1] == 2) txt <- paste0(txt, "병상우선")
+      if (thisTab$중증도[1] >= 3) txt <- paste0(txt, "상급의료기관 배정")
+      if (thisTab$중증도[1] == 2) txt <- paste0(txt, "의료기관 배정")
       if (thisTab$중증도[1] <= 1) txt <- paste0(txt, "가정")
       txt
     })
 
+    # specific table content -------------------------------------------------
     output$tab2 <- renderDataTable({
-      thisTab <- thisTab %>% select(-도, -시, -장소, -증상발현날짜, -확진날짜, -이름, -성별, -나이, -체온지수, -심폐지수, -의식지수, -심리지수)
-      minus <- c()
-      for (i in 3:ncol(thisTab)) {
-        if (sum(thisTab[, i]) == 0) minus <- c(minus, i)
-        thisTab[which(thisTab[, i] == "TRUE"), i] <- "T"
-        thisTab[which(thisTab[, i] == "FALSE"), i] <- "F"
-      }
-
-      thisTab <- thisTab[, -minus]
+      thisTab <- thisTab %>%
+        select(성명, 확진일자, 체온, 의식지수, 심리지수, 심폐지수, 산소포화도, 호흡수, 맥박, 중증도, 날짜) %>%
+        inner_join(newtab %>% select(성명, 증감)) %>%
+        select(-성명, -증감)
 
       TRIIDX <- which(colnames(thisTab) == "중증도") - 1
-      DIDX <- which(colnames(thisTab) == "기저질병여부") - 1
+
 
       dtobj <-
         datatable(
@@ -521,8 +746,8 @@ server <- function(input, output, session) {
           rownames = FALSE,
           selection = "none",
           options = list(
-            # rowsGroup = list(DIDX), # Disease
-            # rowCallback = styleDT(0, 1, 2, 3, 4, 5, 6, 8),
+            rowCallback = styleDT2(1, 2, 3, 4, 8),
+            # 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감
             dom = "tip",
             autoWidth = FALSE,
             order = list(list(TRIIDX, "desc"))
@@ -541,15 +766,40 @@ server <- function(input, output, session) {
     output$img <- renderHighchart({
       thisTab <- tt
 
+      thisTab$날짜 <- datetime_to_timestamp(lubridate::ymd_hm(thisTab$날짜))
 
       highchart() %>%
         hc_xAxis(type = "datetime", title = list(text = "Day", style = list(fontSize = "20px")), labels = list(style = list(fontSize = "20px"))) %>%
         hc_yAxis_multiples(
-          list(top = "0%", height = "20%", title = list(text = "중증도", style = list(fontSize = "20px")), labels = list(style = list(fontSize = "20px")), lineWidth = 3),
-          list(top = "20%", height = "20%", title = list(text = "체온(°C)", style = list(fontSize = "20px")), labels = list(style = list(fontSize = "20px")), showFirstLabel = T, showLastLabel = T, opposite = T),
-          list(top = "40%", height = "20%", title = list(text = "산소포화도(%)", style = list(fontSize = "20px")), labels = list(style = list(fontSize = "20px")), showFirstLabel = T, showLastLabel = T),
-          list(top = "60%", height = "20%", title = list(text = "호흡수(/분)", style = list(fontSize = "20px")), labels = list(style = list(fontSize = "20px")), showFirstLabel = T, showLastLabel = T, opposite = T),
-          list(top = "80%", height = "20%", title = list(text = "맥박(/분)", style = list(fontSize = "20px")), labels = list(style = list(fontSize = "20px")), showFirstLabel = T, showLastLabel = T)
+          list(
+            top = "0%", height = "20%",
+            title = list(text = "중증도", style = list(fontSize = "20px")),
+            labels = list(style = list(fontSize = "20px")), lineWidth = 3
+          ),
+          list(
+            top = "20%", height = "20%",
+            title = list(text = "체온(°C)", style = list(fontSize = "20px")),
+            labels = list(style = list(fontSize = "20px")),
+            showFirstLabel = T, showLastLabel = T, opposite = T
+          ),
+          list(
+            top = "40%", height = "20%",
+            title = list(text = "산소포화도(%)", style = list(fontSize = "20px")),
+            labels = list(style = list(fontSize = "20px")),
+            showFirstLabel = T, showLastLabel = T
+          ),
+          list(
+            top = "60%", height = "20%",
+            title = list(text = "호흡수(/분)", style = list(fontSize = "20px")),
+            labels = list(style = list(fontSize = "20px")),
+            showFirstLabel = T, showLastLabel = T, opposite = T
+          ),
+          list(
+            top = "80%", height = "20%",
+            title = list(text = "맥박(/분)", style = list(fontSize = "20px")),
+            labels = list(style = list(fontSize = "20px")),
+            showFirstLabel = T, showLastLabel = T
+          )
         ) %>%
         hc_add_series(getColor(thisTab, "중증도"), "line", hcaes("날짜", y, color = color), name = "중증도", marker = list(radius = 8)) %>%
         hc_add_series(getColor(thisTab, "체온"), "line", hcaes("날짜", y, color = color), name = "체온", marker = list(radius = 8), yAxis = 1) %>%
@@ -562,7 +812,6 @@ server <- function(input, output, session) {
     })
   })
 
-
   gtab <- readxl::read_excel("Example_update.xlsx")
 
   # gtab = read_sheet("http://docs.google.com/spreadsheets/d/188LunvsxTa2zqudNwAVDj-cuVpV5jm4y-3LTaj-azQE/edit?usp=sharing")
@@ -572,14 +821,7 @@ server <- function(input, output, session) {
 
   gtab <- gtab %>% select(-id, -birthyear) # remove id, birthyear == name and age
 
-  asDate <- function(i) {
-    i <- strsplit(as.character(i), "")[[1]]
-    as.Date(paste0(
-      paste0(i[1:4], collapse = ""), "-",
-      paste0(i[5:6], collapse = ""), "-",
-      paste0(i[7:8], collapse = "")
-    ), origin = "1970-01-01")
-  }
+
   # data.frame(Date = lapply(gtab$datetime, asDate))
   D <- c()
 
@@ -631,7 +873,7 @@ server <- function(input, output, session) {
     }
   }
 
-  gtab <- gtab %>% select(-all_of(rem))
+  gtab <- gtab %>% select(-rem)
 
   output$tab_google <- renderDataTable(
     datatable(
