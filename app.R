@@ -72,7 +72,7 @@ triage <- function(v) {
   T <- v$체온
   if (T <= 35) PT <- 3
   if (T <= 36 || T > 39) PT <- max(2, PT)
-  if (T >= 38) PT <- max(1, PT)
+  if (T > 38) PT <- max(1, PT)
 
   ##### PCO
 
@@ -233,16 +233,16 @@ ui <- function() {
 # b39ddb purple 3
 
 getColor <- function(Data, Type) {
-  #col1 <- "#ffed82" # yellow
+  col1 <- "#ffed82" # yellow
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
-  #colBasic <- "#35bdbb" # emerald
+  colBasic <- "#35bdbb" # emerald
 
   if (Type == "중증도") {
     res <-
       sapply(Data[[Type]], function(i) {
-        #v <- colBasic
-        #if (i == 1) v <- col1
+        v <- colBasic
+        if (i == 1) v <- col1
         if (i == 2) v <- col2
         if (i >= 3) v <- col3
         return(v)
@@ -257,10 +257,10 @@ getColor <- function(Data, Type) {
         if (T <= 36 || T > 39) {
           return(col2)
         }
-        #if (T >= 38) {
-          #return(col1)
-        #}
-        # return(colBasic)
+        if (T >= 38) {
+          return(col1)
+        }
+         return(colBasic)
       }, USE.NAMES = FALSE)
   }
   if (Type == "산소포화도") {
@@ -272,7 +272,7 @@ getColor <- function(Data, Type) {
         if (O <= 95) {
           return(col2)
         }
-        #return(colBasic)
+        return(colBasic)
       }, USE.NAMES = FALSE)
   }
   if (Type == "호흡수") {
@@ -284,7 +284,7 @@ getColor <- function(Data, Type) {
         if (BC >= 21 || BC <= 11) {
           return(col2)
         }
-        #return(colBasic)
+        return(colBasic)
       }, USE.NAMES = FALSE)
   }
   if (Type == "맥박") {
@@ -299,7 +299,7 @@ getColor <- function(Data, Type) {
         if (P >= 101 || P <= 110) {
           return(col2)
         }
-        #return(colBasic)
+        return(colBasic)
       }, USE.NAMES = FALSE)
   }
 
