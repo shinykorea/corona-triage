@@ -24,7 +24,7 @@ library(tibble)
 
 # create_db(credentials_data = credentials, sqlite_path = "database.sqlite")
 
-material_infobox <- function(width, offset = 0, contents, Infotitle, Cardcolor, boxid) {
+material_infobox <- function(width, offset = 0, contents, Infotitle, Cardcolor, boxid, hover = TRUE, hide = FALSE) {
   title <- HTML(paste0("<span style='font-weight:bold; color:#FFF;'>", Infotitle, "</span>&nbsp;&nbsp;")) # Main Title with white color
 
   box <- shiny::tags$div(
@@ -32,7 +32,7 @@ material_infobox <- function(width, offset = 0, contents, Infotitle, Cardcolor, 
     shiny::tags$div(
       class = "card-content action-button",
       id = boxid,
-      style = paste0("background-color:", Cardcolor, ";", "cursor:pointer;"),
+      style = paste0("background-color:", Cardcolor, ";", ifelse(hover, "cursor:pointer;", ""), ifelse(hide, "display:none;", "")),
       shiny::tags$span(class = "card-title", title),
       shiny::tags$div(
         HTML(paste0("<div style = 'text-align:center;'><span style='font-size:28px; color:#FFF;'>", contents, "</span></div>"))
@@ -539,6 +539,76 @@ server <- function(input, output, session) {
     newtab$센터 <- as.factor(newtab$센터)
     newtab$증감 <- as.factor(newtab$증감)
 
+    output$infoboxGroup <- renderUI({
+      higher <- tab %>%
+        group_by(성명) %>%
+        filter(날짜 == max(날짜)) %>%
+        filter(중증도 >= 3) %>%
+        nrow()
+
+      pat <- tab %>%
+        group_by(성명) %>%
+        filter(날짜 == max(날짜)) %>%
+        filter(중증도 == 2) %>%
+        nrow()
+
+      lastTime1 <- tab %>%
+        filter(센터 == "이천") %>%
+        filter(날짜 == max(날짜)) %>%
+        select(날짜)
+      lastTime2 <- tab %>%
+        filter(센터 == "용인") %>%
+        filter(날짜 == max(날짜)) %>%
+        select(날짜)
+      lastTime1 <- lastTime1[, 1]
+      lastTime2 <- lastTime2[, 1]
+      lastTime1 <- strsplit(lastTime1, "")[[1]]
+      lastTime1 <- paste0(
+        paste0(lastTime1[6], collapse = ""), "월 ",
+        paste0(lastTime1[7:8], collapse = ""), "일 ",
+        ifelse(lastTime1[9] == 0, "1차", "2차")
+      )
+
+      lastTime2 <- strsplit(lastTime2, "")[[1]]
+      lastTime2 <- paste0(
+        paste0(lastTime2[6], collapse = ""), "월 ",
+        paste0(lastTime2[7:8], collapse = ""), "일 ",
+        ifelse(lastTime2[9] == 0, "1차", "2차")
+      )
+
+      lastTime <- paste0("용인센터: ", lastTime2, "<br>", "이천센터: ", lastTime1)
+
+      tagList(
+        material_infobox(
+          width = 2, offset = 2,
+          contents = paste0("<br>", higher, "명"),
+          Infotitle = "상급의료기관 배정 필요",
+          Cardcolor = "#d492b2",
+          boxid = "higherBox"
+        ), # pink
+        material_infobox(
+          width = 2, contents = paste0("<br>", pat, "명"),
+          Infotitle = "의료기관 배정 필요",
+          Cardcolor = "#02adea",
+          boxid = "patBox"
+        ), # sky
+        material_infobox(
+          width = 2, contents = lastTime,
+          Infotitle = "업데이트시간",
+          Cardcolor = "#439e5b",
+          boxid = "timeBox", hover = FALSE
+        ), # green
+
+        material_infobox(
+          width = 2,
+          contents = "",
+          Infotitle = "테이블 리셋",
+          Cardcolor = "#000000",
+          boxid = "resetBox", hide = TRUE
+        ) # reset
+      )
+    })
+
     dtobj <- datatable(
       newtab,
       escape = FALSE,
@@ -562,40 +632,27 @@ server <- function(input, output, session) {
     dtobj
   })
 
-  output$infoboxGroup <- renderUI({
-    higher <- tab %>%
-      group_by(성명) %>%
-      filter(날짜 == max(날짜)) %>%
-      filter(중증도 >= 3) %>%
-      nrow()
-
-    pat <- tab %>%
-      group_by(성명) %>%
-      filter(날짜 == max(날짜)) %>%
-      filter(중증도 == 2) %>%
-      nrow()
-
-    tagList(
-      material_infobox(
-        width = 2, offset = 3,
-        contents = paste0(higher, "명"),
-        Infotitle = "상급의료기관 배정 필요",
-        Cardcolor = "#d492b2",
-        boxid = "higherBox"
-      ), # pink
-      material_infobox(
-        width = 2, contents = paste0(pat, "명"),
-        Infotitle = "의료기관 배정 필요", Cardcolor = "#02adea", boxid = "patBox"
-      ), # sky
-      material_infobox(width = 2, contents = "20/03/16", Infotitle = "업데이트시간", Cardcolor = "#439e5b", boxid = "timeBox") # green
+  observeEvent(input$resetBox, { # 초기화
+    output$tab1 <- renderDataTable(
+      datatable(
+        newtab,
+        escape = FALSE,
+        options = list(
+          # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
+          rowCallback = styleDT(5, 6, 7, 8, 9, 10),
+          dom = "tip",
+          order = list(list(9, "desc"))
+        ),
+        selection = "single",
+        # filter = "top",
+        rownames = FALSE
+      )
     )
+    shinyjs::hide("resetBox")
   })
 
-
-
   observeEvent(input$higherBox, { # 중증도 3
-
-
+    shinyjs::show("resetBox")
     output$tab1 <- renderDataTable({
       datatable(
         newtab %>% filter(중증도 >= 3),
@@ -614,6 +671,7 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$patBox, { # 중증도 2
+    shinyjs::show("resetBox")
     output$tab1 <- renderDataTable({
       datatable(
         newtab %>% filter(중증도 == 2),
