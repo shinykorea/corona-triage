@@ -10,7 +10,11 @@ library(gridExtra)
 library(shinymanager) ## login
 library(highcharter) ## interactive graph
 library(googlesheets4) # google sheets
-library(gargle) # googlesheets encoding
+
+# important -------------------------------- must be development version
+# devtools::install_github('r-lib/gargle')
+library(gargle) # googlesheets encoding,
+
 library(lubridate) # date handling
 library(tibble)
 
@@ -33,7 +37,7 @@ material_infobox <- function(width, offset = 0, contents, Infotitle, Cardcolor, 
       class = "card-content action-button",
       id = boxid,
       style = paste0("background-color:", Cardcolor, "; padding : 1em; ", ifelse(hover, "cursor:pointer;", ""), ifelse(hide, "display:none;", "")),
-      shiny::tags$span(class = "card-title", style = 'text-align:center', title),
+      shiny::tags$span(class = "card-title", style = "text-align:center", title),
       shiny::tags$div(
         HTML(paste0("<div style = 'text-align:center;'><span style='font-size:1.2vw; color:#FFF;'>", contents, "</span></div>"))
       )
@@ -95,7 +99,7 @@ ui <- function() {
     tags$head(tags$style(type = "text/css", "table.dataTable tr.selected td, table.dataTable td.selected {background-color: #d1c4e9 !important;}")),
 
     tags$head(HTML("<title>G-CoMS 확진자 건강관리 시스템</title>")),
-    
+
     ## Change Font Here ---------------------------------------------------
     tags$head(includeCSS("www/includeGGfont.css")),
     tags$head(includeCSS("www/customcss.css")),
@@ -260,7 +264,7 @@ getColor <- function(Data, Type) {
         if (T >= 38) {
           return(col1)
         }
-         return(colBasic)
+        return(colBasic)
       }, USE.NAMES = FALSE)
   }
   if (Type == "산소포화도") {
@@ -310,7 +314,7 @@ getColor <- function(Data, Type) {
 styleDT <- function(point, change) {
   # 중증도, 증감
   # index 형태로 주어져야함.
-  #col1 <- "#ffed82" # yellow
+  # col1 <- "#ffed82" # yellow
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
   col4 <- "#91c320" # green
@@ -354,6 +358,7 @@ server <- function(input, output, session) {
   # deauthorize google sheets
   sheets_deauth()
 
+
   ## Apply login DB
   res_auth <- secure_server(
     check_credentials = check_credentials("database.sqlite")
@@ -362,7 +367,10 @@ server <- function(input, output, session) {
   tab <- newtab <- ""
 
   output$tab1 <- renderDataTable({
-    tab <- readxl::read_xlsx("Example.xlsx")
+    GoogleSheetsLink <- "" # hide.
+    tab <- read_sheet(GoogleSheetsLink)
+
+    # tab <- readxl::read_xlsx("Example.xlsx")
 
     # tab$confirmdate <- as.Date(tab$confirmdate)
     tab$date <- as.character(tab$date)
@@ -555,15 +563,14 @@ server <- function(input, output, session) {
           Cardcolor = "#35a4c6",
           boxid = "timeBox1"
         ), # green
-        
+
         material_infobox(
           width = 2, contents = lastTime1,
           Infotitle = "업데이트시간(이천)",
           Cardcolor = "#35a4c6",
           boxid = "timeBox2"
         ) # purple
-      ) 
-      
+      )
     })
 
     dtobj <- datatable(
@@ -592,7 +599,7 @@ server <- function(input, output, session) {
   observeEvent(input$timeBox1, {
     output$tab1 <- renderDataTable(
       datatable(
-        newtab %>% filter(센터 == '용인'),
+        newtab %>% filter(센터 == "용인"),
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
@@ -607,11 +614,11 @@ server <- function(input, output, session) {
     )
     shinyjs::show("resetBox")
   })
-  
-  observeEvent(input$timeBox2,{
+
+  observeEvent(input$timeBox2, {
     output$tab1 <- renderDataTable(
       datatable(
-        newtab %>% filter(센터 =='이천'),
+        newtab %>% filter(센터 == "이천"),
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
@@ -626,7 +633,7 @@ server <- function(input, output, session) {
     )
     shinyjs::show("resetBox")
   })
-  
+
   observeEvent(input$resetBox, { # 초기화
     output$tab1 <- renderDataTable(
       datatable(
@@ -776,31 +783,31 @@ server <- function(input, output, session) {
             title = list(text = "체온(°C)", style = list(fontSize = "20px")),
             labels = list(style = list(fontSize = "20px")),
             showFirstLabel = T, showLastLabel = T, opposite = T
-          )#,
-          #list(
-            #top = "40%", height = "20%",
-            #title = list(text = "산소포화도(%)", style = list(fontSize = "20px")),
-            #labels = list(style = list(fontSize = "20px")),
-            #showFirstLabel = T, showLastLabel = T
-          #),
-          #list(
-            #top = "60%", height = "20%",
-            #title = list(text = "호흡수(/분)", style = list(fontSize = "20px")),
-            #labels = list(style = list(fontSize = "20px")),
-            #showFirstLabel = T, showLastLabel = T, opposite = T
-          #),
-          #list(
-            #top = "80%", height = "20%",
-            #title = list(text = "맥박(/분)", style = list(fontSize = "20px")),
-            #labels = list(style = list(fontSize = "20px")),
-            #showFirstLabel = T, showLastLabel = T
-          #)
+          ) # ,
+          # list(
+          # top = "40%", height = "20%",
+          # title = list(text = "산소포화도(%)", style = list(fontSize = "20px")),
+          # labels = list(style = list(fontSize = "20px")),
+          # showFirstLabel = T, showLastLabel = T
+          # ),
+          # list(
+          # top = "60%", height = "20%",
+          # title = list(text = "호흡수(/분)", style = list(fontSize = "20px")),
+          # labels = list(style = list(fontSize = "20px")),
+          # showFirstLabel = T, showLastLabel = T, opposite = T
+          # ),
+          # list(
+          # top = "80%", height = "20%",
+          # title = list(text = "맥박(/분)", style = list(fontSize = "20px")),
+          # labels = list(style = list(fontSize = "20px")),
+          # showFirstLabel = T, showLastLabel = T
+          # )
         ) %>%
         hc_add_series(getColor(thisTab, "중증도"), "line", hcaes("날짜", y, color = color), name = "중증도", marker = list(radius = 8)) %>%
         hc_add_series(getColor(thisTab, "체온"), "line", hcaes("날짜", y, color = color), name = "체온", marker = list(radius = 8), yAxis = 1) %>%
-        #hc_add_series(getColor(thisTab, "산소포화도"), "line", hcaes("날짜", y, color = color), name = "산소포화도", marker = list(radius = 8), yAxis = 2) %>%
-        #hc_add_series(getColor(thisTab, "호흡수"), "line", hcaes("날짜", y, color = color), name = "호흡수", marker = list(radius = 8), yAxis = 3) %>%
-        #hc_add_series(getColor(thisTab, "맥박"), "line", hcaes("날짜", y, color = color), name = "맥박", marker = list(radius = 8), yAxis = 4) %>%
+        # hc_add_series(getColor(thisTab, "산소포화도"), "line", hcaes("날짜", y, color = color), name = "산소포화도", marker = list(radius = 8), yAxis = 2) %>%
+        # hc_add_series(getColor(thisTab, "호흡수"), "line", hcaes("날짜", y, color = color), name = "호흡수", marker = list(radius = 8), yAxis = 3) %>%
+        # hc_add_series(getColor(thisTab, "맥박"), "line", hcaes("날짜", y, color = color), name = "맥박", marker = list(radius = 8), yAxis = 4) %>%
         hc_legend(itemStyle = list(fontSize = "20px")) %>%
         hc_exporting(enabled = T) %>%
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T, style = list(fontSize = "20px"), headerFormat = '<span style="font-size: 20px; color: black;">{point.key}</span><br/>')
