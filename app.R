@@ -353,8 +353,7 @@ asDate <- function(i) {
 }
 
 readSurvey <- function() {
-  sheets_deauth()
-
+  sheets_auth("") # hide.
   Link <- "" # hide.
   Survey <- read_sheet(Link)
 
@@ -368,7 +367,7 @@ readSurvey <- function() {
 }
 
 readPat <- function() {
-  sheets_deauth()
+  sheets_auth("") # hide.
   Link <- "" # hide.
 
   sheets <- sheets_sheets(Link)
