@@ -113,7 +113,7 @@ ui <- function() {
       color = "#311b92"
     ),
 
-    # Define tab content
+    # Define Pat content
     material_tab_content(
       tab_id = "facility",
       # tags$h1("생활치료센터"),
@@ -343,7 +343,6 @@ styleDT2 <- function(point) {
         }"))
 }
 
-
 asDate <- function(i) {
   i <- strsplit(as.character(i), "")[[1]]
   as.Date(paste0(
@@ -353,130 +352,150 @@ asDate <- function(i) {
   ), origin = "1970-01-01")
 }
 
+readSurvey <- function() {
+  sheets_deauth()
+
+  Link <- "" # hide.
+  Survey <- read_sheet(Link)
+
+  colnames(Survey) <- c(
+    "시간", "목적", "이름", "주민등록번호", "확진일자",
+    "입소일자", "센터", "보건소", "60세", "24개월",
+    "개월", "보호자", "기저질병", "초기산소", "독립생활",
+    "거주지", "고위험군동거"
+  )
+  return(data.frame(Survey))
+}
+
+readPat <- function() {
+  sheets_deauth()
+  Link <- "" # hide.
+
+  sheets <- sheets_sheets(Link)
+
+  Pat <- read_sheet(Link, sheet = sheets[1]) # first sheets
+  for (i in 2:length(sheets)) {
+    Pat <- rbind(Pat, read_sheet(Link, sheet = sheets[i]))
+  }
+
+  colnames(Pat) <- c(
+    "주민등록번호", "이름", "확진일자", "기저질환", "센터", "체온",
+    "의식저하", "가벼운불안", "호흡곤란", "산소포화도", "호흡수",
+    "맥박", "중증도", "퇴원여부", "입력날짜", "차수"
+  )
+  Pat <- Pat %>% select(-중증도) # remove 중증도도
+
+  ### disease decompose ---------------------------
+
+  temp <- t(sapply(Pat$기저질환, function(i) {
+    res <- rep(0, 9)
+    if (!is.na(i)) {
+      v <- as.numeric(strsplit(i, split = ",")[[1]])
+      if (length(v)) {
+        res[as.numeric(strsplit(i, split = ",")[[1]])] <- 1
+      }
+    }
+
+    names(res) <- c("당뇨", "만성 신질환", "만성 간질환", "만성 폐질환", "만성 심혈관 질환", "혈액암", "항암치료 암환자", "면역억제제 복용", "HIV 환자")
+    return(res)
+  }, USE.NAMES = FALSE))
+
+  Pat <- Pat %>% cbind(temp)
+
+  Pat <- Pat %>% select(-기저질환)
+
+  ### 중증도 계산 --------------------------------
+
+  TRIS <- sapply(1:nrow(Pat), function(i) {
+    Pat[i, ] %>%
+      select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
+      triage()
+  })
+  rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
+
+  Pat <- Pat %>% cbind(t(TRIS))
+
+  ## 날짜 decompose ---------------
+
+  DATE <- sapply(1:nrow(Pat), function(i) {
+    if (Pat$차수[i] == 1) {
+      return(paste0(Pat$입력날짜[i], "0900"))
+    }
+    return(paste0(Pat$입력날짜[i], "2100"))
+  }, USE.NAMES = FALSE)
+
+  Pat <- Pat %>%
+    cbind(DATE) %>%
+    select(-입력날짜, -차수) %>%
+    rename(날짜 = DATE)
+
+  Pat$날짜 <- as.character(Pat$날짜)
+
+  # 생년월일
+
+  Birth <- sapply(Pat$주민등록번호, function(i) {
+    (i - i %% 10000000) / 10000000
+  })
+
+  Sex <- sapply(Pat$주민등록번호, function(i) {
+    i <- i %% 10000000
+    i <- (i - i %% 1000000) / 1000000
+    ifelse(i %% 2 == 1, "M", "F")
+  })
+
+  Pat <- Pat %>%
+    cbind(Birth) %>%
+    rename(생년월일 = Birth) %>%
+    cbind(Sex) %>%
+    rename(성별 = Sex)
+
+  return(data.frame(Pat))
+}
+
+
+
 server <- function(input, output, session) {
+
+  # off scientific notation
+  options(scipen = 999)
 
   # deauthorize google sheets
   sheets_deauth()
-
 
   ## Apply login DB
   res_auth <- secure_server(
     check_credentials = check_credentials("database.sqlite")
   )
 
-  tab <- newtab <- ""
+  newtab <- ""
+
+  Pat <- readPat()
+  Survey <- readSurvey()
+  Pat <- Pat %>% inner_join(Survey, by = c("주민등록번호", "센터", "이름", "확진일자"))
 
   output$tab1 <- renderDataTable({
-    GoogleSheetsLink <- "" # hide.
-    tab <- read_sheet(GoogleSheetsLink)
-
-    # tab <- readxl::read_xlsx("Example.xlsx")
-
-    # tab$confirmdate <- as.Date(tab$confirmdate)
-    tab$date <- as.character(tab$date)
-
-    # tab$sex <- as.factor(tab$sex)
-    # tab$center <- as.factor(tab$center)
-
-    tab <- tab %>%
-      rename(확진번호 = id) %>%
-      rename(성명 = name) %>%
-      rename(성별 = sex) %>%
-      # rename(연령 = age) %>%
-      # rename(출생년도 = birthyear) %>%
-      rename(생년월일 = birthdate) %>%
-      # rename(최초인지보건소 = ori_center) %>%
-      # rename(실거주지보건소 = res_center) %>%
-      rename(확진일자 = confirmdate) %>%
-      rename(기저질환 = disease) %>%
-      rename(센터 = center) %>%
-      # rename(특수사항 = special) %>%
-      # rename(입원산소포화도 = inpt_sat) %>%
-      # rename(독립생활공간 = inde_resi) %>%
-      # rename(적절한거주지 = apt_resi) %>%
-      # rename(고위험군동거 = highrisk_g) %>%
-      rename(체온 = temperature) %>%
-      rename(호흡곤란 = dyspnea) %>%
-      rename(의식저하 = mental) %>%
-      rename(가벼운불안 = anxiety) %>%
-      rename(입력날짜 = date) %>%
-      rename(차수 = num) %>%
-      rename(호흡수 = RR) %>%
-      rename(산소포화도 = sao2) %>%
-      rename(맥박 = HR) %>%
-      # rename(중증도 = pcr) %>%
-      rename(퇴원여부 = discharge)
-
-
-    tab <- tab %>% select(-pcr) # remove pcr
-
-    ### disease decompose ---------------------------
-
-    temp <- t(sapply(tab$기저질환, function(i) {
-      res <- rep(0, 9)
-      res[as.numeric(strsplit(i, split = ",")[[1]])] <- 1
-      names(res) <- c("당뇨", "만성 신질환", "만성 간질환", "만성 폐질환", "만성 심혈관 질환", "혈액암", "항암치료 암환자", "면역억제제 복용", "HIV 환자")
-      res
-    }, USE.NAMES = FALSE))
-
-    tab <- tab %>% cbind(temp)
-
-    tab <- tab %>% select(-기저질환)
-
-    ### 중증도 계산 --------------------------------
-
-    TRIS <- sapply(1:nrow(tab), function(i) {
-      tab[i, ] %>%
-        select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
-        triage()
-    })
-    rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
-
-    tab <- tab %>% cbind(t(TRIS))
-
-    ## 날짜 decompose ---------------
-
-    DATE <- sapply(1:nrow(tab), function(i) {
-      if (tab$차수[i] == 1) {
-        return(paste0(tab$입력날짜[i], "0900"))
-      }
-      return(paste0(tab$입력날짜[i], "2100"))
-    }, USE.NAMES = FALSE)
-
-
-    tab <- tab %>%
-      cbind(DATE) %>%
-      select(-입력날짜, -차수) %>%
-      rename(날짜 = DATE)
-
-    tab$날짜 <- as.character(tab$날짜)
-
-    tab <<- tab
 
     ## 증감 계산 -------------------------------------------------------------
 
-
-    # tab column name -------------------------------------------------------------------------------------------
-    # 확진번호 성명 성별 생년월일 확진일자 센터 체온 의식저하 가벼운불한 호흡곤란 산소포화도 호흡수 맥박 퇴원여부
+    # Pat column name -------------------------------------------------------------------------------------------
+    # 주민등록번호 이름 성별 생년월일 확진일자 센터 체온 의식저하 가벼운불한 호흡곤란 산소포화도 호흡수 맥박 퇴원여부
     # 입력날짜 차수 당뇨 만성 신질환 만성 간질환 만성 폐질환 만성 심혈관 질환 혈액암 항암치료 암환자 면역억제제 복용 HIV 환자
     # 체온지수 심폐지수 의식지수 심리지수 중증도
 
-    newtab <<- tab %>%
-      group_by(성명) %>%
+    newtab <<- Pat %>%
+      group_by(이름) %>%
       filter(날짜 == max(날짜)) %>% # recent data
-      select(확진번호, 성명, 생년월일, 확진일자, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
+      select(주민등록번호, 이름, 생년월일, 확진일자, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
 
-    rownames(newtab) <- NULL
-
-    temp <- tab %>%
-      group_by(성명) %>%
+    temp <- Pat %>%
+      group_by(이름) %>%
       top_n(2, wt = 날짜) %>%
-      select(성명, 날짜, 중증도)
+      select(이름, 날짜, 중증도)
 
-    newtab$성명 <- as.character(newtab$성명)
+    newtab$이름 <- as.character(newtab$이름)
 
-    change <- sapply(unique(temp$성명), function(i) {
-      k <- temp %>% filter(성명 == i)
+    change <- sapply(unique(temp$이름), function(i) {
+      k <- temp %>% filter(이름 == i)
       if (nrow(k) == 1) {
         return(".")
       } # 변화없음
@@ -489,7 +508,7 @@ server <- function(input, output, session) {
       return("-") # 감소
     })
 
-    temp <- data.frame(성명 = names(change), 증감 = change, stringsAsFactors = FALSE, row.names = NULL)
+    temp <- data.frame(이름 = names(change), 증감 = change, stringsAsFactors = FALSE, row.names = NULL)
 
     newtab <- newtab %>% inner_join(temp)
     newtab <- newtab %>% select(-날짜)
@@ -502,28 +521,28 @@ server <- function(input, output, session) {
     # ORDER COLUMN    : 8  #
     ########################
 
-    newtab$성명 <- as.factor(newtab$성명)
+    newtab$이름 <- as.factor(newtab$이름)
     newtab$센터 <- as.factor(newtab$센터)
     newtab$증감 <- as.factor(newtab$증감)
 
     output$infoboxGroup <- renderUI({
-      higher <- tab %>%
-        group_by(성명) %>%
+      higher <- Pat %>%
+        group_by(이름) %>%
         filter(날짜 == max(날짜)) %>%
         filter(중증도 >= 3) %>%
         nrow()
 
-      pat <- tab %>%
-        group_by(성명) %>%
+      pat <- Pat %>%
+        group_by(이름) %>%
         filter(날짜 == max(날짜)) %>%
         filter(중증도 == 2) %>%
         nrow()
 
-      lastTime1 <- tab %>%
+      lastTime1 <- Pat %>%
         filter(센터 == "이천") %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
-      lastTime2 <- tab %>%
+      lastTime2 <- Pat %>%
         filter(센터 == "용인") %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
@@ -714,13 +733,15 @@ server <- function(input, output, session) {
   # specific table -------------------------------------------------------------
   observeEvent(input$tab1_rows_selected, {
     selected <- input$tab1_rows_selected # check none selected
-    tt <- thisTab <- tab %>% filter(성명 == newtab$성명[selected])
+    tt <- thisTab <- Pat %>%
+      filter(이름 == newtab$이름[selected]) %>%
+      arrange(desc(날짜))
 
     # specific table title ----------------------------------------------------
     output$pat <- renderText({
       txt <- paste0(
         HTML('<i class = "material-icons" style= "font-size : 2.5rem">face</i> '), # icon
-        thisTab$성명[1], " / ",
+        thisTab$이름[1], " / ",
         thisTab$성별[1], " / ",
         thisTab$생년월일[1], " / ",
         thisTab$센터[1], "센터 / "
@@ -734,9 +755,9 @@ server <- function(input, output, session) {
     # specific table content -------------------------------------------------
     output$tab2 <- renderDataTable({
       thisTab <- thisTab %>%
-        select(성명, 확진일자, 체온, 의식지수, 심리지수, 심폐지수, 산소포화도, 호흡수, 맥박, 중증도, 날짜) %>%
-        inner_join(newtab %>% select(성명, 증감)) %>%
-        select(-성명, -증감)
+        select(이름, 확진일자, 체온, 의식지수, 심리지수, 심폐지수, 산소포화도, 호흡수, 맥박, 중증도, 날짜) %>%
+        inner_join(newtab %>% select(이름, 증감)) %>%
+        select(-이름, -증감)
 
       TRIIDX <- which(colnames(thisTab) == "중증도") - 1
 
