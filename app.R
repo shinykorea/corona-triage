@@ -74,14 +74,22 @@ triage <- function(v) {
   ##### PT
 
   T <- v$체온
-  if (T <= 35) PT <- 3
-  if (T <= 36 || T > 39) PT <- max(2, PT)
-  if (T > 38) PT <- max(1, PT)
-
+  if(!is.na(T)){
+    if (T <= 35) PT <- 3
+    if (T <= 36 || T > 39) PT <- max(2, PT)
+    if (T > 38) PT <- max(1, PT)
+  }
+  else{
+    PT <- 0
+  }
+  
   ##### PCO
 
   CO <- v$의식저하
-  if (CO) PCO <- 3
+  if(is.na(CO)) { PCO <- 0 }
+  else{
+    if(CO) PCO <- 3
+  }
 
 
   return(c(PT, PCF, PCO, PM, sum(PT, PCF, PCO, PM)))
@@ -246,6 +254,7 @@ getColor <- function(Data, Type) {
     res <-
       sapply(Data[[Type]], function(i) {
         v <- colBasic
+        if(is.na(i)) return(colBasic)
         if (i == 1) v <- col1
         if (i == 2) v <- col2
         if (i >= 3) v <- col3
@@ -255,6 +264,7 @@ getColor <- function(Data, Type) {
   if (Type == "체온") {
     res <-
       sapply(Data[[Type]], function(T) {
+        if(is.na(T)) return(colBasic)
         if (T <= 35) {
           return(col3)
         }
@@ -270,6 +280,7 @@ getColor <- function(Data, Type) {
   if (Type == "산소포화도") {
     res <-
       sapply(Data[[Type]], function(O) {
+        if(is.na(O)) return(colBasic)
         if (O <= 93) {
           return(col3)
         }
@@ -282,6 +293,7 @@ getColor <- function(Data, Type) {
   if (Type == "호흡수") {
     res <-
       sapply(Data[[Type]], function(BC) {
+        if(is.na(BC)) return(colBasic)
         if (BC >= 25 || BC <= 8) {
           return(col3)
         }
@@ -294,6 +306,7 @@ getColor <- function(Data, Type) {
   if (Type == "맥박") {
     res <-
       sapply(Data[[Type]], function(P) {
+        if(is.na(P)) return(colBasic)
         if (P > 110 || P <= 40) {
           return(col3)
         }
@@ -575,13 +588,6 @@ server <- function(input, output, session) {
       # filter = "top",
       rownames = FALSE
     )
-    path <- file.path(getwd(), "www")
-    dep <- htmltools::htmlDependency(
-      "RowsGroup", "2.0.0",
-      path,
-      script = "dataTables.rowsGroup.js"
-    )
-    dtobj$dependencies <- c(dtobj$dependencies, list(dep))
     dtobj
   })
 
@@ -687,8 +693,22 @@ server <- function(input, output, session) {
       filter(이름 == newtab$이름[selected]) %>%
       arrange(desc(날짜))
 
+    
+    
     # specific table title ----------------------------------------------------
     output$pat <- renderText({
+      
+      EMPTYDATA = FALSE
+      if(length(which(apply( ## DATA HAS EMPTY FIELD
+        thisTab %>%
+        select(이름, 체온, 의식지수, 심리지수, 심폐지수, 산소포화도, 호흡수, 맥박, 중증도, 날짜) %>%
+        inner_join(newtab %>% select(이름, 증감)) %>%
+        select(-이름, -증감), 2, function(x){ any(is.na(x))} )))){
+        
+        EMPTYDATA = TRUE
+        
+      }
+      
       txt <- paste0(
         HTML('<i class = "material-icons" style= "font-size : 2.5rem">face</i> '), # icon
         thisTab$이름[1], " / ",
@@ -696,10 +716,17 @@ server <- function(input, output, session) {
         thisTab$생년월일[1], " / ",
         thisTab$센터[1], "센터 / "
       )
+      
       if (thisTab$중증도[1] >= 3) txt <- paste0(txt, "상급의료기관 배정")
       if (thisTab$중증도[1] == 2) txt <- paste0(txt, "의료기관 배정")
       if (thisTab$중증도[1] <= 1) txt <- paste0(txt, "가정")
-      txt
+      
+      if(EMPTYDATA){
+        showNotification(paste("데이터 확인"), duration = 5, type = 'error')
+        txt <- paste0(txt, ' <span style = "color:red">데이터 확인</span>')
+      } 
+      
+      HTML(txt)
     })
 
     # specific table content -------------------------------------------------
@@ -718,7 +745,7 @@ server <- function(input, output, session) {
           rownames = FALSE,
           selection = "none",
           options = list(
-            rowCallback = styleDT2(8),
+            rowCallback = styleDT2(7),
             dom = "tip",
             autoWidth = FALSE,
             order = list(list(TRIIDX, "desc"))
