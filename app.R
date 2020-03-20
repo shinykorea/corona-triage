@@ -378,30 +378,11 @@ readPat <- function() {
   }
 
   colnames(Pat) <- c(
-    "주민등록번호", "이름", "확진일자", "기저질환", "센터", "체온",
-    "의식저하", "가벼운불안", "호흡곤란", "산소포화도", "호흡수",
-    "맥박", "중증도", "퇴원여부", "입력날짜", "차수"
+    "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
+    "호흡곤란", "산소포화도", "호흡수", "맥박", "중증도",
+    "퇴원여부", "센터", "입력날짜", "차수"
   )
-  Pat <- Pat %>% select(-중증도) # remove 중증도도
-
-  ### disease decompose ---------------------------
-
-  temp <- t(sapply(Pat$기저질환, function(i) {
-    res <- rep(0, 9)
-    if (!is.na(i)) {
-      v <- as.numeric(strsplit(i, split = ",")[[1]])
-      if (length(v)) {
-        res[as.numeric(strsplit(i, split = ",")[[1]])] <- 1
-      }
-    }
-
-    names(res) <- c("당뇨", "만성 신질환", "만성 간질환", "만성 폐질환", "만성 심혈관 질환", "혈액암", "항암치료 암환자", "면역억제제 복용", "HIV 환자")
-    return(res)
-  }, USE.NAMES = FALSE))
-
-  Pat <- Pat %>% cbind(temp)
-
-  Pat <- Pat %>% select(-기저질환)
+  Pat <- Pat %>% select(-중증도) # remove 중증도
 
   ### 중증도 계산 --------------------------------
 
@@ -451,15 +432,10 @@ readPat <- function() {
   return(data.frame(Pat))
 }
 
-
-
 server <- function(input, output, session) {
 
   # off scientific notation
   options(scipen = 999)
-
-  # deauthorize google sheets
-  sheets_deauth()
 
   ## Apply login DB
   res_auth <- secure_server(
@@ -470,21 +446,16 @@ server <- function(input, output, session) {
 
   Pat <- readPat()
   Survey <- readSurvey()
-  Pat <- Pat %>% inner_join(Survey, by = c("주민등록번호", "센터", "이름", "확진일자"))
+  Pat <- Pat %>% inner_join(Survey, by = c("주민등록번호", "센터", "이름"))
 
   output$tab1 <- renderDataTable({
 
     ## 증감 계산 -------------------------------------------------------------
 
-    # Pat column name -------------------------------------------------------------------------------------------
-    # 주민등록번호 이름 성별 생년월일 확진일자 센터 체온 의식저하 가벼운불한 호흡곤란 산소포화도 호흡수 맥박 퇴원여부
-    # 입력날짜 차수 당뇨 만성 신질환 만성 간질환 만성 폐질환 만성 심혈관 질환 혈액암 항암치료 암환자 면역억제제 복용 HIV 환자
-    # 체온지수 심폐지수 의식지수 심리지수 중증도
-
     newtab <<- Pat %>%
       group_by(이름) %>%
       filter(날짜 == max(날짜)) %>% # recent data
-      select(주민등록번호, 이름, 생년월일, 확진일자, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
+      select(주민등록번호, 이름, 생년월일, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
 
     temp <- Pat %>%
       group_by(이름) %>%
@@ -709,26 +680,6 @@ server <- function(input, output, session) {
     })
   })
 
-  # output$infoboxGroup2 = renderUI({
-
-  # aged = gtab %>%
-  # filter(date == max(date)) %>%
-  # filter(A>=60) %>%
-  # nrow()
-
-  # pat = gtab %>%
-  # filter(Date == max(Date)) %>%
-  # filter(TRI >=2) %>%
-  # nrow()
-
-  # tagList(
-  # material_infobox(width = 2,offset = 3,contents = pat ,Infotitle = '중증환자수',Cardcolor = 'pink accent-2'), # red
-  # material_infobox(width = 2,contents = aged ,Infotitle = '고령자수',Cardcolor =  'teal darken-3'), # green
-  # material_infobox(width = 2,contents = '20/03/14', Infotitle = '업데이트시간',Cardcolor =  'deep-purple') # purple,
-  # )
-  # })
-
-
   # specific table -------------------------------------------------------------
   observeEvent(input$tab1_rows_selected, {
     selected <- input$tab1_rows_selected # check none selected
@@ -754,7 +705,7 @@ server <- function(input, output, session) {
     # specific table content -------------------------------------------------
     output$tab2 <- renderDataTable({
       thisTab <- thisTab %>%
-        select(이름, 확진일자, 체온, 의식지수, 심리지수, 심폐지수, 산소포화도, 호흡수, 맥박, 중증도, 날짜) %>%
+        select(이름, 체온, 의식지수, 심리지수, 심폐지수, 산소포화도, 호흡수, 맥박, 중증도, 날짜) %>%
         inner_join(newtab %>% select(이름, 증감)) %>%
         select(-이름, -증감)
 
@@ -764,12 +715,10 @@ server <- function(input, output, session) {
       dtobj <-
         datatable(
           thisTab,
-          # colnames=c("날짜", "D", "체온", "산소포화도", "호흡수", "맥박", "의식저하", "두근거림", "떨림", "숨가쁨", "질식감","가슴불편", "메스꺼움", "어지러움", "중증도"),
           rownames = FALSE,
           selection = "none",
           options = list(
             rowCallback = styleDT2(8),
-            # 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감
             dom = "tip",
             autoWidth = FALSE,
             order = list(list(TRIIDX, "desc"))
@@ -840,9 +789,7 @@ server <- function(input, output, session) {
   # names(gtab) <- c("res_time", "name", "birth", "initial_res_yn", "gender", "age", "basis_sick", "temperature", "breathe_hard_yn", "breathe_cnt", "pulse_cnt", "oxygen","bloodpressure")
   # gtab <- gtab %>% mutate(res_time = as_date(gtab$res_time), birth = as_date(gtab$birth))
 
-
   gtab <- gtab %>% select(-id, -birthyear) # remove id, birthyear == name and age
-
 
   # data.frame(Date = lapply(gtab$datetime, asDate))
   D <- c()
@@ -861,7 +808,6 @@ server <- function(input, output, session) {
   gtab$inde_resi <- as.factor(gtab$inde_resi)
   gtab$apt_resi <- as.factor(gtab$apt_resi)
   gtab$highrisk_g <- as.factor(gtab$highrisk_g)
-
 
   getPT <- function(T) {
     PT <- 0
@@ -900,14 +846,9 @@ server <- function(input, output, session) {
   output$tab_google <- renderDataTable(
     datatable(
       gtab %>% select(장소, 이름, 성별, 나이, 체온지수, 심폐지수, 의식지수, 심리지수, 중증도),
-      # colnames=c("장소", "이름", "성별", "나이", "체온", "심폐기능", "의식수준", "심리상태", "중증도"),
       escape = FALSE,
-      # caption = "전체 환자: 시설",
       options = list(
-        # rowCallback = styleDT(3, 4, 5, 6, 7, 8, 9, 11),
-        dom = "tip" # ,
-        # rowsGroup = list(8)#,
-        # order = list(list(8, "desc"))
+        dom = "tip"
       ),
       selection = "single",
       filter = "top",
@@ -925,7 +866,6 @@ server <- function(input, output, session) {
         thisTab$이름[1], " / ", # name
         thisTab$성별[1], " / ", # sex
         thisTab$확진날짜[1], "에 확진", " / ", # confirmed
-        # thisTab$Town[1], " / ", # town
         thisTab$장소[1], " / "
       )
       if (thisTab$중증도[1] == 3) txt <- paste0(txt, "상급병상우선")
@@ -947,11 +887,8 @@ server <- function(input, output, session) {
           rownames = FALSE,
           selection = "none",
           options = list(
-            # rowsGroup = list(DIDX), # Disease
-            # rowCallback = styleDT(0, 1, 2, 3, 4, 5, 6, 8),
             dom = "tip",
-            autoWidth = FALSE # ,
-            # order = list(list(TRIIDX, "desc"))
+            autoWidth = FALSE
           )
         )
       path <- file.path(getwd(), "www")
