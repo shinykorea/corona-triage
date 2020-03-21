@@ -385,9 +385,18 @@ readPat <- function() {
 
   sheets <- sheets_sheets(Link)
 
-  Pat <- read_sheet(Link, sheet = sheets[1]) # first sheets
-  for (i in 2:length(sheets)) {
-    Pat <- rbind(Pat, read_sheet(Link, sheet = sheets[i]))
+  Pat <- c()
+  
+  for (i in 1:length(sheets)) {
+    PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
+    PatTemp$temperature = as.numeric(unlist(PatTemp$temperature))
+    PatTemp$mental = as.numeric(unlist(PatTemp$mental))
+    PatTemp$anxiety = as.numeric(unlist(PatTemp$anxiety))
+    PatTemp$dyspnea = as.numeric(unlist(PatTemp$dyspnea))
+    PatTemp$sao2 = as.numeric(unlist(PatTemp$sao2))
+    PatTemp$HR = as.numeric(unlist(PatTemp$HR))
+    PatTemp$PCR = as.numeric(unlist(PatTemp$PCR))
+    Pat <- rbind(Pat, PatTemp)
   }
 
   colnames(Pat) <- c(
