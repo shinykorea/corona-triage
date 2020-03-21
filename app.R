@@ -68,8 +68,8 @@ myButton <- function(inputId, label, width = NULL, onClick = NULL, ...) {
 triage <- function(v) {
   PT <- PCO <- 0
 
-  PCF <- v$호흡곤란
-  PM <- v$가벼운불안
+  PCF <- ifelse(is.na(v$호흡곤란), 0, v$호흡곤란)
+  PM <- ifelse(is.na(v$가벼운불안), 0, v$가벼운불안)
 
   ##### PT
 
@@ -385,9 +385,18 @@ readPat <- function() {
 
   sheets <- sheets_sheets(Link)
 
-  Pat <- read_sheet(Link, sheet = sheets[1]) # first sheets
-  for (i in 2:length(sheets)) {
-    Pat <- rbind(Pat, read_sheet(Link, sheet = sheets[i]))
+  Pat <- c()
+  
+  for (i in 1:length(sheets)) {
+    PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
+    PatTemp$temperature = as.numeric(unlist(PatTemp$temperature))
+    PatTemp$mental = as.numeric(unlist(PatTemp$mental))
+    PatTemp$anxiety = as.numeric(unlist(PatTemp$anxiety))
+    PatTemp$dyspnea = as.numeric(unlist(PatTemp$dyspnea))
+    PatTemp$sao2 = as.numeric(unlist(PatTemp$sao2))
+    PatTemp$HR = as.numeric(unlist(PatTemp$HR))
+    PatTemp$PCR = as.numeric(unlist(PatTemp$PCR))
+    Pat <- rbind(Pat, PatTemp)
   }
 
   colnames(Pat) <- c(
@@ -525,25 +534,33 @@ server <- function(input, output, session) {
         filter(센터 == "이천") %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
+      
       lastTime2 <- Pat %>%
         filter(센터 == "용인") %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
-      lastTime1 <- lastTime1[, 1]
-      lastTime2 <- lastTime2[, 1]
-      lastTime1 <- strsplit(lastTime1, "")[[1]]
-      lastTime1 <- paste0(
-        paste0(lastTime1[6], collapse = ""), "월 ",
-        paste0(lastTime1[7:8], collapse = ""), "일 ",
-        ifelse(lastTime1[9] == 0, "1차", "2차")
-      )
-
-      lastTime2 <- strsplit(lastTime2, "")[[1]]
-      lastTime2 <- paste0(
-        paste0(lastTime2[6], collapse = ""), "월 ",
-        paste0(lastTime2[7:8], collapse = ""), "일 ",
-        ifelse(lastTime2[9] == 0, "1차", "2차")
-      )
+      
+      if(nrow(lastTime1) == 0) {lastTime1 <- "데이터 없음"}
+      else{
+        lastTime1 <- lastTime1[, 1]
+        lastTime1 <- strsplit(lastTime1, "")[[1]]
+        lastTime1 <- paste0(
+          paste0(lastTime1[6], collapse = ""), "월 ",
+          paste0(lastTime1[7:8], collapse = ""), "일 ",
+          ifelse(lastTime1[9] == 0, "1차", "2차")
+        )
+      }
+      
+      if(nrow(lastTime2) == 0) {lastTime2 <- "데이터 없음"}
+      else{
+        lastTime2 <- lastTime2[, 1]
+        lastTime2 <- strsplit(lastTime2, "")[[1]]
+        lastTime2 <- paste0(
+          paste0(lastTime2[6], collapse = ""), "월 ",
+          paste0(lastTime2[7:8], collapse = ""), "일 ",
+          ifelse(lastTime2[9] == 0, "1차", "2차")
+        )
+      }
 
       tagList(
         material_infobox(
