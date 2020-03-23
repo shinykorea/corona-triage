@@ -406,6 +406,8 @@ readPat <- function() {
   )
   Pat <- Pat %>% select(-중증도) # remove 중증도
 
+  Pat <- Pat %>% filter(!is.na(주민등록번호) ) %>% filter(!is.na(이름))
+  
   ### 중증도 계산 --------------------------------
 
   TRIS <- sapply(1:nrow(Pat), function(i) {
