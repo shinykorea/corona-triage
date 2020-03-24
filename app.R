@@ -395,13 +395,13 @@ readSurvey <- function() {
   return(data.frame(Survey))
 }
 
-
 readPat <- function() {
   sheets_auth("") # hide.
   Link <- "" # hide.
 
   sheets <- sheets_sheets(Link)
-
+  sheets <- sheets[which(lubridate::as_date(sheets) <= Sys.Date() )]
+  
   Pat <- c()
 
   for (i in 1:length(sheets)) {
@@ -485,7 +485,8 @@ readPat2 <- function() {
   Link <- "" # hide.
 
   sheets <- sheets_sheets(Link)
-
+  sheets <- sheets[which(lubridate::as_date(sheets) <= Sys.Date() )]
+  
   Pat <- c()
 
   for (i in 1:length(sheets)) {
