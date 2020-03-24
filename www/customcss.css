@@ -58,7 +58,3 @@ table {
 	left: calc(45%);
 	width: 15em;
 }
-
-#DataTables_Table_2_info, #DataTables_Table_2_paginate {
-	display:none;
-}
