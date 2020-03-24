@@ -51,11 +51,14 @@ table {
 	height:0.3em;
 }
 
-
 .shiny-notification {
 	position:fixed;
 	font-size:2em;
 	top: calc(45%);
 	left: calc(45%);
 	width: 15em;
+}
+
+#DataTables_Table_2_info, #DataTables_Table_2_paginate {
+	display:none;
 }

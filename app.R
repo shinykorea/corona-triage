@@ -30,7 +30,7 @@ library(tibble)
 
 material_infobox <- function(width, offset = 0, contents, Infotitle, Cardcolor, boxid, hover = TRUE, hide = FALSE) {
   title <- HTML(paste0("<span style='font-weight:bold; font-size:1.2vw;margin:auto;color:#FFF;'>", Infotitle, "</span>&nbsp;&nbsp;")) # Main Title with white color
-  
+
   box <- shiny::tags$div(
     class = "card z-depth-3",
     shiny::tags$div(
@@ -43,7 +43,7 @@ material_infobox <- function(width, offset = 0, contents, Infotitle, Cardcolor, 
       )
     )
   )
-  
+
   material_column(
     width = width,
     offset = offset,
@@ -66,53 +66,52 @@ myButton <- function(inputId, label, width = NULL, onClick = NULL, ...) {
 
 
 triage <- function(v) {
-  
   PT <- PCO <- 0
   POT <- 0
-  if(is.na(v$호흡곤란)) {
+  if (is.na(v$호흡곤란)) {
     PCF <- "<span style='color:red'>0</span>"
     # NO POT ADD
   }
-  else{
+  else {
     PCF <- v$호흡곤란
     POT <- POT + PCF
   }
-  
-  if(is.na(v$가벼운불안)){
+
+  if (is.na(v$가벼운불안)) {
     PM <- "<span style='color:red'>0</span>"
     # NO POT ADD
   }
-  else{
+  else {
     PM <- v$가벼운불안
     POT <- POT + PM
   }
-  
+
   ##### PT
-  
+
   T <- v$체온
-  if(!is.na(T)){
+  if (!is.na(T)) {
     if (T <= 35) PT <- 3
     if (T <= 36 || T > 39) PT <- max(2, PT)
     if (T > 38) PT <- max(1, PT)
     POT <- POT + PT
   }
-  else{
+  else {
     PT <- "<span style='color:red'>0</span>"
     # NO POT ADD
   }
-  
+
   ##### PCO
-  
+
   CO <- v$의식저하
-  if(is.na(CO)) { 
-    PCO <- "<span style='color:red'>0</span>" 
+  if (is.na(CO)) {
+    PCO <- "<span style='color:red'>0</span>"
     # NO POT ADD
   }
-  else{
-    if(CO) PCO <- 3
+  else {
+    if (CO) PCO <- 3
     POT <- POT + PCO
   }
-  
+
   return(c(PT, PCF, PCO, PM, POT))
 }
 
@@ -126,32 +125,32 @@ ui <- function() {
     ),
     useShinyjs(),
     tags$head(tags$style(type = "text/css", "table.dataTable tr.selected td, table.dataTable td.selected {background-color: #d1c4e9 !important;}")),
-    
+
     tags$head(HTML("<title>G-CoMS 확진자 건강관리 시스템</title>")),
-    
+
     ## Change Font Here ---------------------------------------------------
     tags$head(includeCSS("www/includeGGfont.css")),
     tags$head(includeCSS("www/customcss.css")),
-    
+
     material_tabs(
       tabs = c(
-        "생활치료센터" = "facility",
-        "가정" = "home" # ,
+        "생활치료센터" = "facility" # ,
+        # "가정" = "home" # ,
         # "구글시트예시" = 'google'
       ),
       color = "#311b92"
     ),
-    
+
     # Define Pat content
     material_tab_content(
       tab_id = "facility",
-      # tags$h1("생활치료센터"),
-      div( # navigator
+      # navigator
+      div(
         material_column(
-          myButton(inputId = "toinfo", label = "info", onClick = 'location.href = "#infoboxGroup"'),
-          myButton(inputId = "totab1", label = "tab1", onClick = 'location.href = "#tab1"'),
-          myButton(inputId = "totab2", label = "tab2", onClick = 'location.href = "#tab2"'),
-          myButton(inputId = "toimg", label = "img", onClick = 'location.href = "#img"'),
+          myButton(inputId = "toinfo", label = "요약", onClick = 'location.href = "#infoboxGroup"'),
+          myButton(inputId = "totab1", label = "전체환자", onClick = 'location.href = "#tab1"'),
+          myButton(inputId = "totab2", label = "선택환자", onClick = 'location.href = "#tab2"'),
+          myButton(inputId = "toimg", label = "시간별", onClick = 'location.href = "#img"'),
         ),
         id = "home_navigator",
         style = "position:fixed;bottom:3em;width:100%;z-index:999;"
@@ -177,7 +176,6 @@ ui <- function() {
           )
         ),
       ),
-      
       material_row(
         height = "100%",
         material_column(
@@ -185,15 +183,15 @@ ui <- function() {
             title = htmlOutput("pat", style = "text-align:center"),
             divider = TRUE,
             DT::dataTableOutput("tab0"),
+            div(class = "divider", style = "margin-top:3em;"),
             DT::dataTableOutput("tab2")
           ),
           width = 12
         ),
-        
         material_column(
           material_card(
             title = HTML(paste0(
-              "Visualize among time. ",
+              "시간별 지수 변화, ",
               '<span style = "background-color:#ff6363">　</span> : 3 ',
               '<span style = "background-color:#ff9d9d">　</span> : 2 ',
               '<span style = "background-color:#35a4c6">　</span> : 1 ',
@@ -208,75 +206,69 @@ ui <- function() {
       ),
       div(style = "height:3em;")
     ),
-    material_tab_content(
-      tab_id = "home",
-      material_row(
-        div(style = "height:1em"),
-        uiOutput(outputId = "infoboxGroup2")
-      ),
-      material_row(
-        material_column(
-          width = 12,
-          material_card(
-            title = "",
-            depth = 3,
-            DT::dataTableOutput("tab_google"),
-          )
-        )
-      ),
-      
-      material_row(
-        height = "100%",
-        material_column(
-          material_card(
-            title = htmlOutput("pat2", style = "text-align:center"),
-            divider = TRUE,
-            DT::dataTableOutput("tab_google2")
-          ),
-          width = 12
-        ),
-        
-        material_column(
-          material_card(
-            title = HTML(paste0(
-              "Visualize among time. ",
-              '<span style = "background-color:#ff6363">　</span> : 3 ',
-              '<span style = "background-color:#f6a21c">　</span> : 2 ',
-              '<span style = "background-color:#ffed82">　</span> : 1 ',
-              '<span style = "background-color:#35bdbb">　</span> : 0'
-            )),
-            highchartOutput("img2", height = "600px"),
-            depth = 3
-          ),
-          width = 12
-        )
-      )
-    )
+    # material_tab_content(
+    # tab_id = "home",
+    # material_row(
+    # div(style = "height:1em"),
+    # uiOutput(outputId = "infoboxGroup2")
+    # ),
+    # material_row(
+    # material_column(
+    # width = 12,
+    # material_card(
+    # title = "",
+    # depth = 3,
+    # DT::dataTableOutput("tab_google"),
+    # )
+    # )
+    # ),
+
+    # material_row(
+    # height = "100%",
+    # material_column(
+    # material_card(
+    # title = htmlOutput("pat2", style = "text-align:center"),
+    # divider = TRUE,
+    # DT::dataTableOutput("tab_google2")
+    # ),
+    # width = 12
+    # ),
+
+    # material_column(
+    # material_card(
+    # title = HTML(paste0(
+    # "시간별 지수 변화, ",
+    #' <span style = "background-color:#ff6363">　</span> : 3 ',
+    #' <span style = "background-color:#f6a21c">　</span> : 2 ',
+    #' <span style = "background-color:#ffed82">　</span> : 1 ',
+    #' <span style = "background-color:#35bdbb">　</span> : 0'
+    # )),
+    # highchartOutput("img2", height = "600px"),
+    # depth = 3
+    # ),
+    # width = 12
+    # )
+    # )
+    # )
   )
 }
 
 # Wrap your UI with secure_app
 # ui <- secure_app(ui, enable_admin = T)  개발땐 생략, 배포시 적용
 
-# f7d794 YELLOW  1 #ffffc0
-# f19066 ORANGE  2 #ffbb85
-# e66767 RED     3 #ff8686
-
-# ede7f6 purple 1
-# d1c4e9 purple 2
-# b39ddb purple 3
-
 getColor <- function(Data, Type) {
   col1 <- "#35a4c6" # yellow
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
   colBasic <- "#35a4c6" # emerald
-  
+
   if (Type == "중증도") {
     res <-
       sapply(Data[[Type]], function(i) {
         v <- colBasic
-        if(is.na(i)) return(colBasic)
+        if (is.na(i)) {
+          return(colBasic)
+        }
         if (i == 1) v <- col1
         if (i == 2) v <- col2
         if (i >= 3) v <- col3
@@ -286,7 +278,9 @@ getColor <- function(Data, Type) {
   if (Type == "체온") {
     res <-
       sapply(Data[[Type]], function(T) {
-        if(is.na(T)) return(colBasic)
+        if (is.na(T)) {
+          return(colBasic)
+        }
         if (T <= 35) {
           return(col3)
         }
@@ -302,7 +296,9 @@ getColor <- function(Data, Type) {
   if (Type == "산소포화도") {
     res <-
       sapply(Data[[Type]], function(O) {
-        if(is.na(O)) return(colBasic)
+        if (is.na(O)) {
+          return(colBasic)
+        }
         if (O <= 93) {
           return(col3)
         }
@@ -315,7 +311,9 @@ getColor <- function(Data, Type) {
   if (Type == "호흡수") {
     res <-
       sapply(Data[[Type]], function(BC) {
-        if(is.na(BC)) return(colBasic)
+        if (is.na(BC)) {
+          return(colBasic)
+        }
         if (BC >= 25 || BC <= 8) {
           return(col3)
         }
@@ -328,7 +326,9 @@ getColor <- function(Data, Type) {
   if (Type == "맥박") {
     res <-
       sapply(Data[[Type]], function(P) {
-        if(is.na(P)) return(colBasic)
+        if (is.na(P)) {
+          return(colBasic)
+        }
         if (P > 110 || P <= 40) {
           return(col3)
         }
@@ -341,15 +341,12 @@ getColor <- function(Data, Type) {
         return(colBasic)
       }, USE.NAMES = FALSE)
   }
-  
-  
+
+
   return(data.frame(날짜 = Data[["날짜"]], y = Data[[Type]], color = res))
 }
 
 styleDT <- function(point, change) {
-  # 중증도, 증감
-  # index 형태로 주어져야함.
-  # col1 <- "#ffed82" # yellow
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
   col4 <- "#91c320" # green
@@ -365,9 +362,6 @@ styleDT <- function(point, change) {
 }
 
 styleDT2 <- function(point) {
-  # 중증도
-  # index 형태로 주어져야함.
-  # col1 <- "#ffed82" # yellow
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
   col4 <- "#91c320" # green
@@ -391,7 +385,7 @@ readSurvey <- function() {
   sheets_auth("") # hide.
   Link <- "" # hide.
   Survey <- read_sheet(Link)
-  
+
   colnames(Survey) <- c(
     "시간", "목적", "이름", "주민등록번호", "확진일자",
     "입소일자", "센터", "보건소", "60세", "24개월",
@@ -405,46 +399,39 @@ readSurvey <- function() {
 readPat <- function() {
   sheets_auth("") # hide.
   Link <- "" # hide.
-  
+
   sheets <- sheets_sheets(Link)
-  
+
   Pat <- c()
-  
+
   for (i in 1:length(sheets)) {
     PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
-    PatTemp$temperature = as.numeric(unlist(PatTemp$temperature))
-    PatTemp$mental = as.numeric(unlist(PatTemp$mental))
-    PatTemp$anxiety = as.numeric(unlist(PatTemp$anxiety))
-    PatTemp$dyspnea = as.numeric(unlist(PatTemp$dyspnea))
-    PatTemp$sao2 = as.numeric(unlist(PatTemp$sao2))
-    PatTemp$HR = as.numeric(unlist(PatTemp$HR))
-    PatTemp$PCR = as.numeric(unlist(PatTemp$PCR))
+    PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+    PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+    PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+    PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+    PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+    PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+    PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
     Pat <- rbind(Pat, PatTemp)
   }
-  
+
   colnames(Pat) <- c(
     "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
     "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
     "퇴원여부", "센터", "입력날짜", "차수"
   )
-  # Pat <- Pat %>% select(-중증도) # remove 중증도
-  
-  Pat <- Pat %>% 
-    filter(!is.na(체온) ) %>% 
-    filter(!is.na(의식저하)) %>% 
-    filter(!is.na(가벼운불안)) %>% 
-    filter(!is.na(호흡곤란))
-  
+
   today <- Sys.Date()
-  
-  Age <- sapply(1:nrow(Pat), function(i){
+
+  Age <- sapply(1:nrow(Pat), function(i) {
     # Year
-    day = (today-as.Date(substr(Pat$주민등록번호[i],1,6),'%y%m%d'))[[1]] 
-    floor(day/365)
+    day <- (today - as.Date(substr(Pat$주민등록번호[i], 1, 6), "%y%m%d"))[[1]]
+    floor(day / 365)
   })
-  
+
   ### 중증도 계산 --------------------------------
-  
+
   TRIS <- sapply(1:nrow(Pat), function(i) {
     Pat[i, ] %>%
       select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
@@ -452,90 +439,83 @@ readPat <- function() {
   })
   rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
   TRIS <- data.frame(t(TRIS), stringsAsFactors = FALSE)
-  
+
   Pat <- Pat %>% cbind(나이 = Age)
   Pat <- Pat %>% cbind(TRIS)
   Pat$중증도 <- as.numeric(Pat$중증도)
-  
+
   ## 날짜 decompose ---------------
-  
+
   DATE <- sapply(1:nrow(Pat), function(i) {
     if (Pat$차수[i] == 1) {
-      return(paste0(Pat$입력날짜[i], "0900"))
+      return(paste0(Pat$입력날짜[i], " 1차"))
     }
-    return(paste0(Pat$입력날짜[i], "2100"))
+    return(paste0(Pat$입력날짜[i], " 2차"))
   }, USE.NAMES = FALSE)
-  
+
   Pat <- Pat %>%
     cbind(DATE) %>%
     rename(날짜 = DATE)
-  
+
   Pat$날짜 <- as.character(Pat$날짜)
-  
+
   # 생년월일
-  
+
   Birth <- sapply(Pat$주민등록번호, function(i) {
     (i - i %% 10000000) / 10000000
   })
-  
+
   Sex <- sapply(Pat$주민등록번호, function(i) {
     i <- i %% 10000000
     i <- (i - i %% 1000000) / 1000000
     ifelse(i %% 2 == 1, "남", "여")
   })
-  
+
   Pat <- Pat %>%
     cbind(Birth) %>%
     rename(생년월일 = Birth) %>%
     cbind(Sex) %>%
     rename(성별 = Sex)
-  
+
   return(data.frame(Pat))
 }
 
 readPat2 <- function() {
   sheets_auth("") # hide.
   Link <- "" # hide.
-  
+
   sheets <- sheets_sheets(Link)
-  
+
   Pat <- c()
-  
+
   for (i in 1:length(sheets)) {
     PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
-    PatTemp$temperature = as.numeric(unlist(PatTemp$temperature))
-    PatTemp$mental = as.numeric(unlist(PatTemp$mental))
-    PatTemp$anxiety = as.numeric(unlist(PatTemp$anxiety))
-    PatTemp$dyspnea = as.numeric(unlist(PatTemp$dyspnea))
-    PatTemp$sao2 = as.numeric(unlist(PatTemp$sao2))
-    PatTemp$HR = as.numeric(unlist(PatTemp$HR))
-    PatTemp$PCR = as.numeric(unlist(PatTemp$PCR))
+    PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+    PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+    PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+    PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+    PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+    PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+    PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
     Pat <- rbind(Pat, PatTemp)
   }
-  
+
   colnames(Pat) <- c(
     "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
     "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
     "퇴원여부", "센터", "입력날짜", "차수"
   )
-  # Pat <- Pat %>% select(-중증도) # remove 중증도
-  
-  Pat <- Pat %>% 
-    filter(!is.na(체온) ) %>% 
-    filter(!is.na(의식저하)) %>% 
-    filter(!is.na(가벼운불안)) %>% 
-    filter(!is.na(호흡곤란))
-  
+
   today <- Sys.Date()
-  
-  Age <- sapply(1:nrow(Pat), function(i){
+
+  Age <- sapply(1:nrow(Pat), function(i) {
     # Year
-    day = (today-as.Date(substr(Pat$주민등록번호[i],1,6),'%y%m%d'))[[1]] 
-    floor(day/365)
+    day <- (today - as.Date(substr(Pat$주민등록번호[i], 1, 6), "%y%m%d"))[[1]]
+    floor(day / 365)
   })
-  
+
   ### 중증도 계산 --------------------------------
-  
+
   TRIS <- sapply(1:nrow(Pat), function(i) {
     Pat[i, ] %>%
       select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
@@ -543,81 +523,91 @@ readPat2 <- function() {
   })
   rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
   TRIS <- data.frame(t(TRIS), stringsAsFactors = FALSE)
-  
+
   Pat <- Pat %>% cbind(나이 = Age)
   Pat <- Pat %>% cbind(TRIS)
   Pat$중증도 <- as.numeric(Pat$중증도)
-  
+
   ## 날짜 decompose ---------------
-  
+
   DATE <- sapply(1:nrow(Pat), function(i) {
     if (Pat$차수[i] == 1) {
-      return(paste0(Pat$입력날짜[i], "0900"))
+      return(paste0(Pat$입력날짜[i], " 1차"))
     }
-    return(paste0(Pat$입력날짜[i], "2100"))
+    return(paste0(Pat$입력날짜[i], " 2차"))
   }, USE.NAMES = FALSE)
-  
+
   Pat <- Pat %>%
     cbind(DATE) %>%
     rename(날짜 = DATE)
-  
+
   Pat$날짜 <- as.character(Pat$날짜)
-  
+
   # 생년월일
-  
+
   Birth <- sapply(Pat$주민등록번호, function(i) {
     (i - i %% 10000000) / 10000000
   })
-  
+
   Sex <- sapply(Pat$주민등록번호, function(i) {
     i <- i %% 10000000
     i <- (i - i %% 1000000) / 1000000
     ifelse(i %% 2 == 1, "남", "여")
   })
-  
+
   Pat <- Pat %>%
     cbind(Birth) %>%
     rename(생년월일 = Birth) %>%
     cbind(Sex) %>%
     rename(성별 = Sex)
-  
+
   return(data.frame(Pat))
 }
 
 server <- function(input, output, session) {
-  
-  # off scientific notation
+
+  # off scientific notation ( 주민번호 )
   options(scipen = 999)
-  
+
   ## Apply login DB
   res_auth <- secure_server(
     check_credentials = check_credentials("database.sqlite")
   )
-  
+
   newtab <- ""
-  
+
   Pat <- readPat()
   Pat <- rbind(Pat, readPat2())
-  
+
   Survey <- readSurvey()
   Pat <- Pat %>% inner_join(Survey, by = c("주민등록번호", "센터", "이름"))
-  
+
   output$tab1 <- renderDataTable({
-    
+
     ## 증감 계산 -------------------------------------------------------------
-    
+
+    discharged <- Pat %>%
+      filter(!is.na(퇴원여부)) %>%
+      select(이름) %>%
+      unlist(use.names = FALSE)
+
     newtab <<- Pat %>%
       group_by(이름) %>%
+      filter(!is.na(체온)) %>%
+      filter(!is.na(의식저하)) %>%
+      filter(!is.na(가벼운불안)) %>%
+      filter(!is.na(호흡곤란)) %>%
+      filter(!이름 %in% discharged) %>%
       filter(날짜 == max(날짜)) %>% # recent data
-      select(주민등록번호, 이름, 성별 , 나이, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
-    
+      select(주민등록번호, 이름, 성별, 나이, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
+
     temp <- Pat %>%
       group_by(이름) %>%
       top_n(2, wt = 날짜) %>%
       select(이름, 날짜, 중증도)
-    
+
     newtab$이름 <- as.character(newtab$이름)
-    
+
     change <- sapply(unique(temp$이름), function(i) {
       k <- temp %>% filter(이름 == i)
       if (nrow(k) == 1) {
@@ -631,49 +621,51 @@ server <- function(input, output, session) {
       } # 증가
       return("-") # 감소
     })
-    
+
     temp <- data.frame(이름 = names(change), 증감 = change, stringsAsFactors = FALSE, row.names = NULL)
-    
+
     newtab <- newtab %>% inner_join(temp)
     newtab <- newtab %>% select(-날짜)
     newtab <<- newtab
-    
+
     rm(temp)
-    
+
     ########################
     # MERGING COLUMN  : 8  #
     # ORDER COLUMN    : 8  #
     ########################
-    
+
     newtab$이름 <- as.factor(newtab$이름)
     newtab$센터 <- as.factor(newtab$센터)
     newtab$증감 <- as.factor(newtab$증감)
-    
+
     output$infoboxGroup <- renderUI({
       higher <- Pat %>%
         group_by(이름) %>%
         filter(날짜 == max(날짜)) %>%
         filter(중증도 >= 3) %>%
         nrow()
-      
+
       pat <- Pat %>%
         group_by(이름) %>%
         filter(날짜 == max(날짜)) %>%
         filter(중증도 == 2) %>%
         nrow()
-      
+
       lastTime1 <- Pat %>%
         filter(센터 == "이천") %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
-      
+
       lastTime2 <- Pat %>%
         filter(센터 == "용인") %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
-      
-      if(nrow(lastTime1) == 0) {lastTime1 <- "데이터 없음"}
-      else{
+
+      if (nrow(lastTime1) == 0) {
+        lastTime1 <- "데이터 없음"
+      }
+      else {
         lastTime1 <- lastTime1[, 1]
         lastTime1 <- strsplit(lastTime1, "")[[1]]
         lastTime1 <- paste0(
@@ -682,9 +674,11 @@ server <- function(input, output, session) {
           ifelse(lastTime1[9] == 0, "1차", "2차")
         )
       }
-      
-      if(nrow(lastTime2) == 0) {lastTime2 <- "데이터 없음"}
-      else{
+
+      if (nrow(lastTime2) == 0) {
+        lastTime2 <- "데이터 없음"
+      }
+      else {
         lastTime2 <- lastTime2[, 1]
         lastTime2 <- strsplit(lastTime2, "")[[1]]
         lastTime2 <- paste0(
@@ -693,7 +687,7 @@ server <- function(input, output, session) {
           ifelse(lastTime2[9] == 0, "1차", "2차")
         )
       }
-      
+
       tagList(
         material_infobox(
           width = 2, offset = 2,
@@ -714,7 +708,7 @@ server <- function(input, output, session) {
           Cardcolor = "#35a4c6",
           boxid = "timeBox1"
         ), # green
-        
+
         material_infobox(
           width = 2, contents = lastTime1,
           Infotitle = "업데이트시간(이천)",
@@ -723,7 +717,7 @@ server <- function(input, output, session) {
         ) # purple
       )
     })
-    
+
     dtobj <- datatable(
       newtab,
       escape = FALSE,
@@ -734,14 +728,14 @@ server <- function(input, output, session) {
         order = list(list(9, "desc")),
         pageLength = 50
       ),
-      
+
       selection = "single",
       # filter = "top",
       rownames = FALSE
     )
     dtobj
   })
-  
+
   observeEvent(input$timeBox1, {
     output$tab1 <- renderDataTable(
       datatable(
@@ -753,7 +747,6 @@ server <- function(input, output, session) {
           dom = "tip",
           order = list(list(9, "desc")),
           pageLength = 50
-          
         ),
         selection = "single",
         # filter = "top",
@@ -762,7 +755,7 @@ server <- function(input, output, session) {
     )
     shinyjs::show("resetBox")
   })
-  
+
   observeEvent(input$timeBox2, {
     output$tab1 <- renderDataTable(
       datatable(
@@ -782,7 +775,7 @@ server <- function(input, output, session) {
     )
     shinyjs::show("resetBox")
   })
-  
+
   observeEvent(input$resetBox, { # 초기화
     output$tab1 <- renderDataTable(
       datatable(
@@ -802,7 +795,7 @@ server <- function(input, output, session) {
     )
     shinyjs::hide("resetBox")
   })
-  
+
   observeEvent(input$higherBox, { # 중증도 3
     shinyjs::show("resetBox")
     output$tab1 <- renderDataTable({
@@ -822,7 +815,7 @@ server <- function(input, output, session) {
       )
     })
   })
-  
+
   observeEvent(input$patBox, { # 중증도 2
     shinyjs::show("resetBox")
     output$tab1 <- renderDataTable({
@@ -842,17 +835,16 @@ server <- function(input, output, session) {
       )
     })
   })
-  
+
   # specific table -------------------------------------------------------------
   observeEvent(input$tab1_rows_selected, {
     selected <- input$tab1_rows_selected # check none selected
     tt <- thisTab <- Pat %>%
       filter(이름 == newtab$이름[selected]) %>%
       arrange(desc(날짜))
-    
+
     # specific table title ----------------------------------------------------
     output$pat <- renderText({
-      
       txt <- paste0(
         HTML('<i class = "material-icons" style= "font-size : 2.5rem">face</i> '), # icon
         thisTab$이름[1], " / ",
@@ -860,23 +852,27 @@ server <- function(input, output, session) {
         thisTab$나이[1], " / ",
         thisTab$센터[1], "센터 / "
       )
-      
+
       if (thisTab$중증도[1] >= 3) txt <- paste0(txt, "상급의료기관 배정 필요")
       if (thisTab$중증도[1] == 2) txt <- paste0(txt, "의료기관 배정 필요")
       if (thisTab$중증도[1] <= 1) txt <- paste0(txt, "생활치료센터 유지")
-      
+
       HTML(txt)
     })
-    
+
     output$tab0 <- renderDataTable({
       tabzero <- thisTab %>% select(확진일자, 입소일자, 보건소, X24개월, 개월, 보호자, 기저질병, 독립생활, 거주지, 고위험군동거)
-      colnames(tabzero) = c('확진일자를 입력해주세요.', '입소일자를 입력해주세요.', '실거주지 보건소를 선택해주세요.', '(소아환자 해당) 24개월 미만입니까?', '(소아환자 해당) 24개월 미만 소아환자일 경우, 개월수를 입력해주세요.', '(소아환자 해당) 소아환자라면 같이 동반할 수 있는 보호자가 있습니까?', '아래 보기 중 해당되는 사항을 모두 선택해주세요.(중복체크 가능)', '가정에서 독립적인 생활이 가능한 환자입니까?','적절한 거주지가 있는 환자입니까?','환자가 고위험군과 동거하고 있습니까?')
-      tabzero <- tabzero[1,]
+      colnames(tabzero) <- c(
+        "확진일자", "입소일자", "실거주지 보건소", "(소아환자) 24개월 미만여부", "(소아환자) 개월 수",
+        "(소아환자) 보호자 유무", "기저질환 (중복체크된 모든 질환 표기 필요)",
+        "가정 내 독립생활 가능 여부", "적절한 거주지 유무", "고위험군과의 동거 여부"
+      )
+      tabzero <- tabzero[1, ]
       tabzero[1] <- lubridate::as_date(tabzero[[1]][1][[1]])
       tabzero[2] <- lubridate::as_date(tabzero[[2]][1][[1]])
-      
+
       datatable(
-        tabzero[1,],
+        tabzero[1, ],
         rownames = FALSE,
         selection = "none",
         options = list(
@@ -886,16 +882,16 @@ server <- function(input, output, session) {
         )
       )
     })
-    
+
     # specific table content -------------------------------------------------
     output$tab2 <- renderDataTable({
       thisTab <- thisTab %>%
-        select(주민등록번호, 입력날짜, 차수, 중증도, PCR , 체온, 의식지수, 심리지수, 심폐지수, 호흡곤란, 산소포화도, 호흡수, 맥박) %>%
+        select(주민등록번호, 입력날짜, 차수, 중증도, PCR, 체온, 의식지수, 심리지수, 심폐지수, 호흡곤란, 산소포화도, 호흡수, 맥박) %>%
         inner_join(newtab %>% select(주민등록번호)) %>%
-        select(-주민등록번호)
-      
+        select(-주민등록번호, -이름)
+
       TRIIDX <- which(colnames(thisTab) == "중증도") - 1
-      
+
       dtobj <-
         datatable(
           thisTab,
@@ -908,7 +904,7 @@ server <- function(input, output, session) {
             order = list(list(TRIIDX, "desc")),
             pageLength = 50
           )
-        )
+        ) %>% formatRound(columns = "체온", digits = 1)
       path <- file.path(getwd(), "www")
       dep <- htmltools::htmlDependency(
         "RowsGroup", "2.0.0",
@@ -918,14 +914,21 @@ server <- function(input, output, session) {
       dtobj$dependencies <- c(dtobj$dependencies, list(dep))
       dtobj
     })
-    
+
     output$img <- renderHighchart({
       thisTab <- tt
-      
-      thisTab$날짜 <- datetime_to_timestamp(lubridate::ymd_hm(thisTab$날짜))
-      
+
+      thisTab$날짜 <- thisTab$날짜
+      #  datetime_to_timestamp(lubridate::ymd_hm(thisTab$날짜))
+
+      thisTab <- thisTab %>% arrange(날짜)
+
       highchart() %>%
-        hc_xAxis(type = "datetime", title = list(text = "Day", style = list(fontSize = "20px")), labels = list(style = list(fontSize = "20px"))) %>%
+        hc_xAxis(
+          type = "datetime",
+          title = list(text = "일", style = list(fontSize = "20px")),
+          labels = list(style = list(fontSize = "0px"))
+        ) %>%
         hc_yAxis_multiples(
           list(
             top = "0%", height = "50%",
@@ -967,21 +970,21 @@ server <- function(input, output, session) {
         hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T, style = list(fontSize = "20px"), headerFormat = '<span style="font-size: 20px; color: black;">{point.key}</span><br/>')
     })
   })
-  
+
   gtab <- readxl::read_excel("Example_update.xlsx")
-  
+
   # gtab = read_sheet("http://docs.google.com/spreadsheets/d/188LunvsxTa2zqudNwAVDj-cuVpV5jm4y-3LTaj-azQE/edit?usp=sharing")
   # names(gtab) <- c("res_time", "name", "birth", "initial_res_yn", "gender", "age", "basis_sick", "temperature", "breathe_hard_yn", "breathe_cnt", "pulse_cnt", "oxygen","bloodpressure")
   # gtab <- gtab %>% mutate(res_time = as_date(gtab$res_time), birth = as_date(gtab$birth))
-  
+
   gtab <- gtab %>% select(-id, -birthyear) # remove id, birthyear == name and age
-  
+
   # data.frame(Date = lapply(gtab$datetime, asDate))
   D <- c()
-  
+
   gtab$datetime <- lubridate::ymd_hm(gtab$datetime)
   # gtab$date = transform(data.frame(Date = gtab$date), Date = as.Date(as.character(Date), "%Y%m%d"))
-  
+
   gtab$sex <- as.factor(gtab$sex)
   gtab$ori_center <- as.factor(gtab$ori_center)
   gtab$res_center <- as.factor(gtab$res_center)
@@ -993,7 +996,7 @@ server <- function(input, output, session) {
   gtab$inde_resi <- as.factor(gtab$inde_resi)
   gtab$apt_resi <- as.factor(gtab$apt_resi)
   gtab$highrisk_g <- as.factor(gtab$highrisk_g)
-  
+
   getPT <- function(T) {
     PT <- 0
     if (T <= 35) PT <- 3
@@ -1001,9 +1004,9 @@ server <- function(input, output, session) {
     if (T >= 38) PT <- max(1, PT)
     return(PT)
   }
-  
+
   gtab <- gtab %>% tibble::add_column(체온지수 = sapply(gtab$temperature, getPT)) # PT
-  
+
   gtab <- gtab %>%
     rename(심폐지수 = dyspnea) %>%
     rename(심리지수 = mental) %>%
@@ -1017,7 +1020,7 @@ server <- function(input, output, session) {
     rename(체온 = temperature) %>%
     rename(기저질병여부 = disease) %>%
     rename(확진날짜 = confirmdate)
-  
+
   # remove all NA column
   rem <- c()
   for (i in 1:ncol(gtab)) {
@@ -1025,9 +1028,9 @@ server <- function(input, output, session) {
       rem <- c(rem, i)
     }
   }
-  
+
   gtab <- gtab %>% select(-rem)
-  
+
   output$tab_google <- renderDataTable(
     datatable(
       gtab %>% select(장소, 이름, 성별, 나이, 체온지수, 심폐지수, 의식지수, 심리지수, 중증도),
@@ -1041,11 +1044,11 @@ server <- function(input, output, session) {
       rownames = FALSE
     )
   )
-  
+
   observeEvent(input$tab_google_rows_selected, {
     selected <- input$tab_google_rows_selected # check none selected
     tt <- thisTab <- gtab %>% filter(이름 == gtab$이름[selected])
-    
+
     output$pat2 <- renderText({
       txt <- paste0(
         HTML('<i class = "material-icons" style= "font-size : 2.5rem">face</i> '), # icon
@@ -1059,13 +1062,13 @@ server <- function(input, output, session) {
       if (thisTab$중증도[1] <= 1) txt <- paste0(txt, "가정")
       txt
     })
-    
+
     output$tab_google2 <- renderDataTable({
       thisTab <- thisTab %>% select(날짜, 기저질병여부, 체온, inde_resi, apt_resi, highrisk_g, 중증도)
-      
+
       TRIIDX <- which(colnames(thisTab) == "중증도") - 1
       DIDX <- which(colnames(thisTab) == "기저질병여부") - 1
-      
+
       dtobj <-
         datatable(
           thisTab,
@@ -1087,10 +1090,10 @@ server <- function(input, output, session) {
       dtobj$dependencies <- c(dtobj$dependencies, list(dep))
       dtobj
     })
-    
+
     output$img2 <- renderHighchart({
       thisTab <- tt
-      
+
       thisTab$날짜 <- datetime_to_timestamp(thisTab$날짜)
       highchart() %>%
         hc_xAxis(type = "datetime", title = list(text = "Day", style = list(fontSize = "20px")), labels = list(style = list(fontSize = "20px"))) %>%
