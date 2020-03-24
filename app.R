@@ -590,7 +590,7 @@ server <- function(input, output, session) {
       filter(!is.na(퇴원여부)) %>%
       select(이름) %>%
       unlist(use.names = FALSE)
-
+    
     newtab <<- Pat %>%
       group_by(이름) %>%
       filter(!is.na(체온)) %>%
@@ -653,12 +653,20 @@ server <- function(input, output, session) {
         nrow()
 
       lastTime1 <- Pat %>%
-        filter(센터 == "이천") %>%
+        filter(센터 == "이천") %>% 
+        filter(!is.na(체온) ) %>% 
+        filter(!is.na(의식저하)) %>% 
+        filter(!is.na(가벼운불안)) %>% 
+        filter(!is.na(호흡곤란)) %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
 
       lastTime2 <- Pat %>%
         filter(센터 == "용인") %>%
+        filter(!is.na(체온) ) %>% 
+        filter(!is.na(의식저하)) %>% 
+        filter(!is.na(가벼운불안)) %>% 
+        filter(!is.na(호흡곤란)) %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
 
@@ -669,9 +677,9 @@ server <- function(input, output, session) {
         lastTime1 <- lastTime1[, 1]
         lastTime1 <- strsplit(lastTime1, "")[[1]]
         lastTime1 <- paste0(
-          paste0(lastTime1[6], collapse = ""), "월 ",
-          paste0(lastTime1[7:8], collapse = ""), "일 ",
-          ifelse(lastTime1[9] == 0, "1차", "2차")
+          as.numeric(paste0(lastTime1[5:6], collapse = "")), "월 ", # 03 -> 3, 10 -> 10
+          paste0(lastTime1[7:8], collapse = ""), "일 ", 
+          paste0(lastTime1[10:11], collapse = "") # 1차, 2차 
         )
       }
 
@@ -682,9 +690,9 @@ server <- function(input, output, session) {
         lastTime2 <- lastTime2[, 1]
         lastTime2 <- strsplit(lastTime2, "")[[1]]
         lastTime2 <- paste0(
-          paste0(lastTime2[6], collapse = ""), "월 ",
-          paste0(lastTime2[7:8], collapse = ""), "일 ",
-          ifelse(lastTime2[9] == 0, "1차", "2차")
+          as.numeric(paste0(lastTime2[5:6], collapse = "")), "월 ", # 03 -> 3, 10 -> 10
+          paste0(lastTime2[7:8], collapse = ""), "일 ", 
+          paste0(lastTime2[10:11], collapse = "") # 1차, 2차 
         )
       }
 
@@ -878,7 +886,9 @@ server <- function(input, output, session) {
         options = list(
           dom = "tip",
           autoWidth = FALSE,
-          pageLength = 50
+          pageLength = 50,
+          bInfo = FALSE,
+          bPaginate = FALSE
         )
       )
     })
@@ -918,16 +928,21 @@ server <- function(input, output, session) {
     output$img <- renderHighchart({
       thisTab <- tt
 
+      
       thisTab$날짜 <- thisTab$날짜
       #  datetime_to_timestamp(lubridate::ymd_hm(thisTab$날짜))
 
       thisTab <- thisTab %>% arrange(날짜)
-
+      
       highchart() %>%
         hc_xAxis(
-          type = "datetime",
+          type = "category",
           title = list(text = "일", style = list(fontSize = "20px")),
-          labels = list(style = list(fontSize = "0px"))
+          labels = list(
+                    format = "{value}",
+                    #text = thisTab$날짜,
+                    style = list(fontSize = "20px"))
+          
         ) %>%
         hc_yAxis_multiples(
           list(
@@ -967,7 +982,12 @@ server <- function(input, output, session) {
         # hc_add_series(getColor(thisTab, "맥박"), "line", hcaes("날짜", y, color = color), name = "맥박", marker = list(radius = 8), yAxis = 4) %>%
         hc_legend(itemStyle = list(fontSize = "20px")) %>%
         hc_exporting(enabled = T) %>%
-        hc_tooltip(valueDecimals = 1, shared = T, crosshairs = T, style = list(fontSize = "20px"), headerFormat = '<span style="font-size: 20px; color: black;">{point.key}</span><br/>')
+        hc_tooltip(
+          shared = T, 
+          crosshairs = T, 
+          style = list(fontSize = "20px"), 
+          headerFormat = '<span style="font-size: 20px; color: black;">{point.key}</span><br/>'
+        )
     })
   })
 
