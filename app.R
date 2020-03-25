@@ -69,7 +69,7 @@ triage <- function(v) {
   PT <- PCO <- 0
   POT <- 0
   if (is.na(v$호흡곤란)) {
-    PCF <- "<span style='color:red'>0</span>"
+    PCF <- ""
     # NO POT ADD
   }
   else {
@@ -78,7 +78,7 @@ triage <- function(v) {
   }
 
   if (is.na(v$가벼운불안)) {
-    PM <- "<span style='color:red'>0</span>"
+    PM <- ""
     # NO POT ADD
   }
   else {
@@ -96,7 +96,7 @@ triage <- function(v) {
     POT <- POT + PT
   }
   else {
-    PT <- "<span style='color:red'>0</span>"
+    PT <- ""
     # NO POT ADD
   }
 
@@ -104,7 +104,7 @@ triage <- function(v) {
 
   CO <- v$의식저하
   if (is.na(CO)) {
-    PCO <- "<span style='color:red'>0</span>"
+    PCO <- ""
     # NO POT ADD
   }
   else {
@@ -362,13 +362,30 @@ styleDT <- function(point, change) {
 }
 
 styleDT2 <- function(point) {
+  temp = 4
+  mental = 5
+  anxiety = 6
+  dyspnea = 7
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
-  col4 <- "#91c320" # green
+  col4 <- "#ffaaa5" # 
   JS(paste0("function(row, data, index){
             // Point
             if(data[", point, "] == 2 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col2, "'});}
             if(data[", point, "] >= 3 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col3, "',});}
+            
+            // temp
+            if(data[", temp, "] == null ){$(row).find('td:eq(", temp, ")').css({'background-color' : '", col4, "',});} 
+            
+            // mental
+            if(data[", mental, "].length == 0 ){$(row).find('td:eq(", mental, ")').css({'background-color' : '", col4, "',});} 
+            
+            // anxiety
+            if(data[", anxiety, "].length == 0 ){$(row).find('td:eq(", anxiety, ")').css({'background-color' : '", col4, "',});} 
+            
+            // dyspnea
+            if(data[", dyspnea, "].length == 0 ){$(row).find('td:eq(", dyspnea, ")').css({'background-color' : '", col4, "',});} 
+            
         }"))
 }
 
@@ -720,7 +737,7 @@ server <- function(input, output, session) {
 
         material_infobox(
           width = 2, contents = lastTime1,
-          Infotitle = "업데이트시간(이천)",
+          Infotitle = "업데이트시간(기타)",
           Cardcolor = "#35a4c6",
           boxid = "timeBox2"
         ) # purple
