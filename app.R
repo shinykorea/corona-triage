@@ -172,7 +172,8 @@ ui <- function() {
           material_card(
             depth = 3,
             title = "",
-            DT::dataTableOutput("tab1")
+            DT::dataTableOutput("tab1"),
+            actionButton(inputId = "unorder", label = "정렬 해제", style = "right: -90%; position: relative; margin-top: 1em; display:none;")
           )
         ),
       ),
@@ -362,13 +363,13 @@ styleDT <- function(point, change) {
 }
 
 styleDT2 <- function(point) {
-  temp = 4
-  mental = 5
-  anxiety = 6
-  dyspnea = 7
+  temp <- 4
+  mental <- 5
+  anxiety <- 6
+  dyspnea <- 7
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
-  col4 <- "#ffaaa5" # 
+  col4 <- "#ffaaa5" #
   JS(paste0("function(row, data, index){
             // Point
             if(data[", point, "] == 2 ){$(row).find('td:eq(", point, ")').css({'background-color' : '", col2, "'});}
@@ -417,21 +418,24 @@ readPat <- function() {
   Link <- "" # hide.
 
   sheets <- sheets_sheets(Link)
-  sheets <- sheets[which(lubridate::as_date(sheets) <= Sys.Date() )]
-  
-  Pat <- c()
+  sheets <- sheets[which(lubridate::as_date(sheets) <= Sys.Date())]
 
-  for (i in 1:length(sheets)) {
-    PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
-    PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-    PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-    PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-    PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-    PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-    PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-    PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-    Pat <- rbind(Pat, PatTemp)
-  }
+  Pat <- c()
+  withProgress(
+    message = "데이터 읽는 중 (용인)",
+    for (i in 1:length(sheets)) {
+      incProgress(1 / length(sheets), detail = paste0(sheets[i], " 시트 읽는 중"))
+      PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
+      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+      Pat <- rbind(Pat, PatTemp)
+    }
+  )
 
   colnames(Pat) <- c(
     "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
@@ -443,11 +447,11 @@ readPat <- function() {
 
   Age <- sapply(1:nrow(Pat), function(i) {
     # Year
-    if(substr(Pat$주민등록번호[i],7,7)>2) {  ## after 2000
-      day <- (today - as.Date( paste0('20', substr(Pat$주민등록번호[i], 1, 6) ), "%Y%m%d"))[[1]]
+    if (substr(Pat$주민등록번호[i], 7, 7) > 2) { ## after 2000
+      day <- (today - as.Date(paste0("20", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
     }
-    else{ # before 2000
-      day <- (today - as.Date( paste0('19', substr(Pat$주민등록번호[i], 1, 6) ), "%Y%m%d"))[[1]]
+    else { # before 2000
+      day <- (today - as.Date(paste0("19", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
     }
     floor(day / 365)
   })
@@ -507,21 +511,25 @@ readPat2 <- function() {
   Link <- "" # hide.
 
   sheets <- sheets_sheets(Link)
-  sheets <- sheets[which(lubridate::as_date(sheets) <= Sys.Date() )]
-  
+  sheets <- sheets[which(lubridate::as_date(sheets) <= Sys.Date())]
+
   Pat <- c()
 
-  for (i in 1:length(sheets)) {
-    PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
-    PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-    PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-    PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-    PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-    PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-    PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-    PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-    Pat <- rbind(Pat, PatTemp)
-  }
+  withProgress(
+    message = "데이터 읽는 중 (이천)",
+    for (i in 1:length(sheets)) {
+      incProgress(1 / length(sheets), detail = paste0(sheets[i], " 시트 읽는 중"))
+      PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
+      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+      Pat <- rbind(Pat, PatTemp)
+    }
+  )
 
   colnames(Pat) <- c(
     "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
@@ -533,11 +541,11 @@ readPat2 <- function() {
 
   Age <- sapply(1:nrow(Pat), function(i) {
     # Year
-    if(substr(Pat$주민등록번호[i],7,7)>2) {  ## after 2000
-      day <- (today - as.Date( paste0('20', substr(Pat$주민등록번호[i], 1, 6) ), "%Y%m%d"))[[1]]
+    if (substr(Pat$주민등록번호[i], 7, 7) > 2) { ## after 2000
+      day <- (today - as.Date(paste0("20", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
     }
-    else{ # before 2000
-      day <- (today - as.Date( paste0('19', substr(Pat$주민등록번호[i], 1, 6) ), "%Y%m%d"))[[1]]
+    else { # before 2000
+      day <- (today - as.Date(paste0("19", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
     }
     floor(day / 365)
   })
@@ -618,7 +626,7 @@ server <- function(input, output, session) {
       filter(!is.na(퇴원여부)) %>%
       select(이름) %>%
       unlist(use.names = FALSE)
-    
+
     newtab <<- Pat %>%
       group_by(이름) %>%
       filter(!is.na(체온)) %>%
@@ -681,19 +689,19 @@ server <- function(input, output, session) {
         nrow()
 
       lastTime1 <- Pat %>%
-        filter(센터 == "이천") %>% 
-        filter(!is.na(체온) ) %>% 
-        filter(!is.na(의식저하)) %>% 
-        filter(!is.na(가벼운불안)) %>% 
+        filter(센터 != "용인") %>%
+        filter(!is.na(체온)) %>%
+        filter(!is.na(의식저하)) %>%
+        filter(!is.na(가벼운불안)) %>%
         filter(!is.na(호흡곤란)) %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
 
       lastTime2 <- Pat %>%
         filter(센터 == "용인") %>%
-        filter(!is.na(체온) ) %>% 
-        filter(!is.na(의식저하)) %>% 
-        filter(!is.na(가벼운불안)) %>% 
+        filter(!is.na(체온)) %>%
+        filter(!is.na(의식저하)) %>%
+        filter(!is.na(가벼운불안)) %>%
         filter(!is.na(호흡곤란)) %>%
         filter(날짜 == max(날짜)) %>%
         select(날짜)
@@ -706,8 +714,8 @@ server <- function(input, output, session) {
         lastTime1 <- strsplit(lastTime1, "")[[1]]
         lastTime1 <- paste0(
           as.numeric(paste0(lastTime1[5:6], collapse = "")), "월 ", # 03 -> 3, 10 -> 10
-          paste0(lastTime1[7:8], collapse = ""), "일 ", 
-          paste0(lastTime1[10:11], collapse = "") # 1차, 2차 
+          paste0(lastTime1[7:8], collapse = ""), "일 ",
+          paste0(lastTime1[10:11], collapse = "") # 1차, 2차
         )
       }
 
@@ -719,8 +727,8 @@ server <- function(input, output, session) {
         lastTime2 <- strsplit(lastTime2, "")[[1]]
         lastTime2 <- paste0(
           as.numeric(paste0(lastTime2[5:6], collapse = "")), "월 ", # 03 -> 3, 10 -> 10
-          paste0(lastTime2[7:8], collapse = ""), "일 ", 
-          paste0(lastTime2[10:11], collapse = "") # 1차, 2차 
+          paste0(lastTime2[7:8], collapse = ""), "일 ",
+          paste0(lastTime2[10:11], collapse = "") # 1차, 2차
         )
       }
 
@@ -753,6 +761,8 @@ server <- function(input, output, session) {
         ) # purple
       )
     })
+
+    shinyjs::show("unorder")
 
     dtobj <- datatable(
       newtab,
@@ -790,6 +800,7 @@ server <- function(input, output, session) {
       )
     )
     shinyjs::show("resetBox")
+    shinyjs::hide("unorder")
   })
 
   observeEvent(input$timeBox2, {
@@ -810,9 +821,30 @@ server <- function(input, output, session) {
       )
     )
     shinyjs::show("resetBox")
+    shinyjs::hide("unorder")
   })
 
+  observeEvent(input$unorder, {
+    output$tab1 <- renderDataTable(
+      datatable(
+        newtab,
+        escape = FALSE,
+        options = list(
+          # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
+          rowCallback = styleDT(9, 10),
+          dom = "tip",
+          # order = list(list(9, "desc")),
+          pageLength = 50
+        ),
+        selection = "single",
+        # filter = "top",
+        rownames = FALSE
+      )
+    )
+  }) # 정렬 해제
+
   observeEvent(input$resetBox, { # 초기화
+
     output$tab1 <- renderDataTable(
       datatable(
         newtab,
@@ -830,10 +862,12 @@ server <- function(input, output, session) {
       )
     )
     shinyjs::hide("resetBox")
+    shinyjs::show("unorder")
   })
 
   observeEvent(input$higherBox, { # 중증도 3
     shinyjs::show("resetBox")
+    shinyjs::hide("unorder")
     output$tab1 <- renderDataTable({
       datatable(
         newtab %>% filter(중증도 >= 3),
@@ -854,6 +888,7 @@ server <- function(input, output, session) {
 
   observeEvent(input$patBox, { # 중증도 2
     shinyjs::show("resetBox")
+    shinyjs::hide("unorder")
     output$tab1 <- renderDataTable({
       datatable(
         newtab %>% filter(중증도 == 2),
@@ -940,7 +975,7 @@ server <- function(input, output, session) {
             rowCallback = styleDT2(7),
             dom = "tip",
             autoWidth = FALSE,
-            order = list(list(TRIIDX, "desc")),
+            # order = list(list(TRIIDX, "desc")),
             pageLength = 50
           )
         ) %>% formatRound(columns = "체온", digits = 1)
@@ -957,21 +992,21 @@ server <- function(input, output, session) {
     output$img <- renderHighchart({
       thisTab <- tt
 
-      
+
       thisTab$날짜 <- thisTab$날짜
       #  datetime_to_timestamp(lubridate::ymd_hm(thisTab$날짜))
 
       thisTab <- thisTab %>% arrange(날짜)
-      
+
       highchart() %>%
         hc_xAxis(
           type = "category",
           title = list(text = "일", style = list(fontSize = "20px")),
           labels = list(
-                    format = "{value}",
-                    #text = thisTab$날짜,
-                    style = list(fontSize = "20px"))
-          
+            format = "{value}",
+            # text = thisTab$날짜,
+            style = list(fontSize = "20px")
+          )
         ) %>%
         hc_yAxis_multiples(
           list(
@@ -1012,9 +1047,9 @@ server <- function(input, output, session) {
         hc_legend(itemStyle = list(fontSize = "20px")) %>%
         hc_exporting(enabled = T) %>%
         hc_tooltip(
-          shared = T, 
-          crosshairs = T, 
-          style = list(fontSize = "20px"), 
+          shared = T,
+          crosshairs = T,
+          style = list(fontSize = "20px"),
           headerFormat = '<span style="font-size: 20px; color: black;">{point.key}</span><br/>'
         )
     })
