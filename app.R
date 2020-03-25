@@ -907,6 +907,7 @@ server <- function(input, output, session) {
         datatable(
           thisTab,
           rownames = FALSE,
+          escape = FALSE,
           selection = "none",
           options = list(
             rowCallback = styleDT2(7),
