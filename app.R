@@ -443,7 +443,12 @@ readPat <- function() {
 
   Age <- sapply(1:nrow(Pat), function(i) {
     # Year
-    day <- (today - as.Date(substr(Pat$주민등록번호[i], 1, 6), "%y%m%d"))[[1]]
+    if(substr(Pat$주민등록번호[i],7,7)>2) {  ## after 2000
+      day <- (today - as.Date( paste0('20', substr(Pat$주민등록번호[i], 1, 6) ), "%Y%m%d"))[[1]]
+    }
+    else{ # before 2000
+      day <- (today - as.Date( paste0('19', substr(Pat$주민등록번호[i], 1, 6) ), "%Y%m%d"))[[1]]
+    }
     floor(day / 365)
   })
 
@@ -528,7 +533,12 @@ readPat2 <- function() {
 
   Age <- sapply(1:nrow(Pat), function(i) {
     # Year
-    day <- (today - as.Date(substr(Pat$주민등록번호[i], 1, 6), "%y%m%d"))[[1]]
+    if(substr(Pat$주민등록번호[i],7,7)>2) {  ## after 2000
+      day <- (today - as.Date( paste0('20', substr(Pat$주민등록번호[i], 1, 6) ), "%Y%m%d"))[[1]]
+    }
+    else{ # before 2000
+      day <- (today - as.Date( paste0('19', substr(Pat$주민등록번호[i], 1, 6) ), "%Y%m%d"))[[1]]
+    }
     floor(day / 365)
   })
 
