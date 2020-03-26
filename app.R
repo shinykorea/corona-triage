@@ -320,7 +320,7 @@ getColor <- function(Data, Type) {
         if (BC >= 25 || BC <= 8) {
           return(col3)
         }
-        if (BC >= 21 || BC <= 11) {
+        if ((BC >= 9 & BC <= 11) | (BC >= 21 & BC <= 24)) {
           return(col2)
         }
         return(colBasic)
@@ -335,10 +335,7 @@ getColor <- function(Data, Type) {
         if (P > 110 || P <= 40) {
           return(col3)
         }
-        if (P >= 100) {
-          return(col2)
-        }
-        if (P >= 101 || P <= 110) {
+        if ((P >= 101 & P <=110) | (P >= 41 & P <= 50)) {
           return(col2)
         }
         return(colBasic)
