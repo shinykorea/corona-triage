@@ -757,6 +757,12 @@ server <- function(input, output, session) {
       })
       
       shinyjs::show("unorder")
+      shinyjs::hide('tab0')
+      shinyjs::hide('tab2')
+      shinyjs::hide('note')
+      shinyjs::hide('pat')
+      shinyjs::hide('img')
+      
       
       dtobj <- datatable(
         newtab,
@@ -775,6 +781,8 @@ server <- function(input, output, session) {
       )
       dtobj
     })
+    
+    
   }
   
   # off scientific notation ( 주민번호 )
@@ -813,12 +821,17 @@ server <- function(input, output, session) {
     )
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
+    shinyjs::hide('tab0')
+    shinyjs::hide("tab2")
+    shinyjs::hide('note')
+    shinyjs::hide('pat')
+    shinyjs::hide('img')
   })
   
   observeEvent(input$timeBox2, {
     output$tab1 <- renderDataTable(
       datatable(
-        newtab %>% filter(센터 == "이천"),
+        newtab %>% filter(센터 != "용인"),
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
@@ -834,10 +847,16 @@ server <- function(input, output, session) {
     )
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
+    shinyjs::hide('tab0')
+    shinyjs::hide("tab2")
+    shinyjs::hide('note')
+    shinyjs::hide('pat')
+    shinyjs::hide('img')
   })
   
   observeEvent(input$reload, {
     readData()
+    
     
   })
   
@@ -858,6 +877,12 @@ server <- function(input, output, session) {
         rownames = FALSE
       )
     )
+    shinyjs::hide('tab0')
+    shinyjs::hide("tab2")
+    shinyjs::hide('note')
+    shinyjs::hide('pat')
+    shinyjs::hide('img')
+    
   }) # 정렬 해제
   
   observeEvent(input$resetBox, { # 초기화
@@ -880,6 +905,11 @@ server <- function(input, output, session) {
     )
     shinyjs::hide("resetBox")
     shinyjs::show("unorder")
+    shinyjs::hide('tab0')
+    shinyjs::hide("tab2")
+    shinyjs::hide('note')
+    shinyjs::hide('pat')
+    shinyjs::hide('img')
   })
   
   observeEvent(input$higherBox, { # 중증도 3
@@ -901,6 +931,11 @@ server <- function(input, output, session) {
         rownames = FALSE
       )
     })
+    shinyjs::hide('tab0')
+    shinyjs::hide("tab2")
+    shinyjs::hide('note')
+    shinyjs::hide('pat')
+    shinyjs::hide('img')
   })
   
   observeEvent(input$patBox, { # 중증도 2
@@ -922,10 +957,17 @@ server <- function(input, output, session) {
         rownames = FALSE
       )
     })
+    shinyjs::hide('tab0')
+    shinyjs::hide("tab2")
+    shinyjs::hide('note')
+    shinyjs::hide('pat')
+    shinyjs::hide('img')
   })
   
   # specific table -------------------------------------------------------------
   observeEvent(input$tab1_rows_selected, {
+    
+    
     selected <- input$tab1_rows_selected # check none selected
     tt <- thisTab <- Pat() %>%
       filter(이름 == newtab$이름[selected]) %>%
@@ -973,6 +1015,13 @@ server <- function(input, output, session) {
         )
       )
     })
+    
+    shinyjs::show('tab0')
+    shinyjs::show('tab2')
+    shinyjs::show('note')
+    shinyjs::show('pat')
+    shinyjs::show('img')
+    
     
     output$tab0 <- renderDataTable({
       tabzero <- thisTab %>% select(확진일자, 입소일자, 보건소, X24개월, 개월, 보호자, 기저질병, 독립생활, 거주지, 고위험군동거)
