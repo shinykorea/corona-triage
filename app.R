@@ -172,6 +172,7 @@ ui <- function() {
           material_card(
             depth = 3,
             title = "",
+            actionButton(inputId = "reload", label = "테이블 새로고침", style = "right: -90%; position: relative; margin-bottom: 1em;"),
             DT::dataTableOutput("tab1"),
             actionButton(inputId = "unorder", label = "정렬 해제", style = "right: -90%; position: relative; margin-top: 1em; display:none;")
           )
@@ -255,7 +256,7 @@ ui <- function() {
 }
 
 # Wrap your UI with secure_app
-ui <- secure_app(ui(), enable_admin = T)  #개발땐 생략, 배포시 적용
+ui <- secure_app(ui(), enable_admin = T, theme = 'customcss.css')  #개발땐 생략, 배포시 적용
 
 getColor <- function(Data, Type) {
   col1 <- "#35a4c6" # yellow
@@ -600,7 +601,180 @@ readPat2 <- function() {
   return(data.frame(Pat))
 }
 
+
 server <- function(input, output, session) {
+  
+  
+  readData <- function(){
+    Pat <<- reactive({
+      rbind(readPat(), readPat2()) %>% 
+        inner_join(readSurvey(), by = c("주민등록번호", "센터", "이름"))
+    })
+    
+    output$tab1 <- renderDataTable({
+      
+      ## 증감 계산 -------------------------------------------------------------
+      
+      discharged <- Pat() %>%
+        filter(!is.na(퇴원여부)) %>%
+        select(이름) %>%
+        unlist(use.names = FALSE)
+      
+      newtab <<- Pat() %>%
+        group_by(이름) %>%
+        filter(!is.na(체온)) %>%
+        filter(!is.na(의식저하)) %>%
+        filter(!is.na(가벼운불안)) %>%
+        filter(!is.na(호흡곤란)) %>%
+        filter(!이름 %in% discharged) %>%
+        filter(날짜 == max(날짜)) %>% # recent data
+        select(주민등록번호, 이름, 성별, 나이, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
+      
+      temp <- Pat() %>%
+        group_by(이름) %>%
+        top_n(2, wt = 날짜) %>%
+        select(이름, 날짜, 중증도)
+      
+      newtab$이름 <- as.character(newtab$이름)
+      
+      change <- sapply(unique(temp$이름), function(i) {
+        k <- temp %>% filter(이름 == i)
+        if (nrow(k) == 1) {
+          return(".")
+        } # 변화없음
+        if (k$중증도[2] == k$중증도[1]) {
+          return(".")
+        } # 변화없음
+        if (k$중증도[2] > k$중증도[1]) {
+          return("+")
+        } # 증가
+        return("-") # 감소
+      })
+      
+      temp <- data.frame(이름 = names(change), 증감 = change, stringsAsFactors = FALSE, row.names = NULL)
+      
+      newtab <- newtab %>% inner_join(temp)
+      newtab <- newtab %>% select(-날짜)
+      newtab <<- newtab
+      
+      rm(temp)
+      
+      ########################
+      # MERGING COLUMN  : 8  #
+      # ORDER COLUMN    : 8  #
+      ########################
+      
+      newtab$이름 <- as.factor(newtab$이름)
+      newtab$센터 <- as.factor(newtab$센터)
+      newtab$증감 <- as.factor(newtab$증감)
+      
+      output$infoboxGroup <- renderUI({
+        higher <- Pat() %>%
+          group_by(이름) %>%
+          filter(날짜 == max(날짜)) %>%
+          filter(중증도 >= 3) %>%
+          nrow()
+        
+        pat <- Pat() %>%
+          group_by(이름) %>%
+          filter(날짜 == max(날짜)) %>%
+          filter(중증도 == 2) %>%
+          nrow()
+        
+        lastTime1 <- Pat() %>%
+          filter(센터 != "용인") %>%
+          filter(!is.na(체온)) %>%
+          filter(!is.na(의식저하)) %>%
+          filter(!is.na(가벼운불안)) %>%
+          filter(!is.na(호흡곤란)) %>%
+          filter(날짜 == max(날짜)) %>%
+          select(날짜)
+        
+        lastTime2 <- Pat() %>%
+          filter(센터 == "용인") %>%
+          filter(!is.na(체온)) %>%
+          filter(!is.na(의식저하)) %>%
+          filter(!is.na(가벼운불안)) %>%
+          filter(!is.na(호흡곤란)) %>%
+          filter(날짜 == max(날짜)) %>%
+          select(날짜)
+        
+        if (nrow(lastTime1) == 0) {
+          lastTime1 <- "데이터 없음"
+        }
+        else {
+          lastTime1 <- lastTime1[, 1]
+          lastTime1 <- strsplit(lastTime1, "")[[1]]
+          lastTime1 <- paste0(
+            as.numeric(paste0(lastTime1[5:6], collapse = "")), "월 ", # 03 -> 3, 10 -> 10
+            paste0(lastTime1[7:8], collapse = ""), "일 ",
+            paste0(lastTime1[10:11], collapse = "") # 1차, 2차
+          )
+        }
+        
+        if (nrow(lastTime2) == 0) {
+          lastTime2 <- "데이터 없음"
+        }
+        else {
+          lastTime2 <- lastTime2[, 1]
+          lastTime2 <- strsplit(lastTime2, "")[[1]]
+          lastTime2 <- paste0(
+            as.numeric(paste0(lastTime2[5:6], collapse = "")), "월 ", # 03 -> 3, 10 -> 10
+            paste0(lastTime2[7:8], collapse = ""), "일 ",
+            paste0(lastTime2[10:11], collapse = "") # 1차, 2차
+          )
+        }
+        
+        tagList(
+          material_infobox(
+            width = 2, offset = 2,
+            contents = paste0(higher, "명"),
+            Infotitle = "상급의료기관 배정 필요",
+            Cardcolor = "#ff6363",
+            boxid = "higherBox"
+          ), # pink
+          material_infobox(
+            width = 2, contents = paste0(pat, "명"),
+            Infotitle = "의료기관 배정 필요",
+            Cardcolor = "#ff9d9d",
+            boxid = "patBox"
+          ), # sky
+          material_infobox(
+            width = 2, contents = lastTime2,
+            Infotitle = "업데이트시간(용인)",
+            Cardcolor = "#35a4c6",
+            boxid = "timeBox1"
+          ), # green
+          
+          material_infobox(
+            width = 2, contents = lastTime1,
+            Infotitle = "업데이트시간(기타)",
+            Cardcolor = "#35a4c6",
+            boxid = "timeBox2"
+          ) # purple
+        )
+      })
+      
+      shinyjs::show("unorder")
+      
+      dtobj <- datatable(
+        newtab,
+        escape = FALSE,
+        options = list(
+          # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
+          rowCallback = styleDT(9, 10),
+          dom = "tip",
+          order = list(list(9, "desc")),
+          pageLength = 50
+        ),
+        
+        selection = "single",
+        # filter = "top",
+        rownames = FALSE
+      )
+      dtobj
+    })
+  }
   
   # off scientific notation ( 주민번호 )
   options(scipen = 999)
@@ -617,174 +791,7 @@ server <- function(input, output, session) {
   #Pat <- reactive(rbind(Pat(), readPat2()))
   #Survey <- reactive(readSurvey())
   
-  Pat <- reactive({
-    rbind(readPat(), readPat2()) %>% 
-      inner_join(readSurvey(), by = c("주민등록번호", "센터", "이름"))
-  })
-  
-  output$tab1 <- renderDataTable({
-    
-    ## 증감 계산 -------------------------------------------------------------
-    
-    discharged <- Pat() %>%
-      filter(!is.na(퇴원여부)) %>%
-      select(이름) %>%
-      unlist(use.names = FALSE)
-    
-    newtab <<- Pat() %>%
-      group_by(이름) %>%
-      filter(!is.na(체온)) %>%
-      filter(!is.na(의식저하)) %>%
-      filter(!is.na(가벼운불안)) %>%
-      filter(!is.na(호흡곤란)) %>%
-      filter(!이름 %in% discharged) %>%
-      filter(날짜 == max(날짜)) %>% # recent data
-      select(주민등록번호, 이름, 성별, 나이, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
-    
-    temp <- Pat() %>%
-      group_by(이름) %>%
-      top_n(2, wt = 날짜) %>%
-      select(이름, 날짜, 중증도)
-    
-    newtab$이름 <- as.character(newtab$이름)
-    
-    change <- sapply(unique(temp$이름), function(i) {
-      k <- temp %>% filter(이름 == i)
-      if (nrow(k) == 1) {
-        return(".")
-      } # 변화없음
-      if (k$중증도[2] == k$중증도[1]) {
-        return(".")
-      } # 변화없음
-      if (k$중증도[2] > k$중증도[1]) {
-        return("+")
-      } # 증가
-      return("-") # 감소
-    })
-    
-    temp <- data.frame(이름 = names(change), 증감 = change, stringsAsFactors = FALSE, row.names = NULL)
-    
-    newtab <- newtab %>% inner_join(temp)
-    newtab <- newtab %>% select(-날짜)
-    newtab <<- newtab
-    
-    rm(temp)
-    
-    ########################
-    # MERGING COLUMN  : 8  #
-    # ORDER COLUMN    : 8  #
-    ########################
-    
-    newtab$이름 <- as.factor(newtab$이름)
-    newtab$센터 <- as.factor(newtab$센터)
-    newtab$증감 <- as.factor(newtab$증감)
-    
-    output$infoboxGroup <- renderUI({
-      higher <- Pat() %>%
-        group_by(이름) %>%
-        filter(날짜 == max(날짜)) %>%
-        filter(중증도 >= 3) %>%
-        nrow()
-      
-      pat <- Pat() %>%
-        group_by(이름) %>%
-        filter(날짜 == max(날짜)) %>%
-        filter(중증도 == 2) %>%
-        nrow()
-      
-      lastTime1 <- Pat() %>%
-        filter(센터 != "용인") %>%
-        filter(!is.na(체온)) %>%
-        filter(!is.na(의식저하)) %>%
-        filter(!is.na(가벼운불안)) %>%
-        filter(!is.na(호흡곤란)) %>%
-        filter(날짜 == max(날짜)) %>%
-        select(날짜)
-      
-      lastTime2 <- Pat() %>%
-        filter(센터 == "용인") %>%
-        filter(!is.na(체온)) %>%
-        filter(!is.na(의식저하)) %>%
-        filter(!is.na(가벼운불안)) %>%
-        filter(!is.na(호흡곤란)) %>%
-        filter(날짜 == max(날짜)) %>%
-        select(날짜)
-      
-      if (nrow(lastTime1) == 0) {
-        lastTime1 <- "데이터 없음"
-      }
-      else {
-        lastTime1 <- lastTime1[, 1]
-        lastTime1 <- strsplit(lastTime1, "")[[1]]
-        lastTime1 <- paste0(
-          as.numeric(paste0(lastTime1[5:6], collapse = "")), "월 ", # 03 -> 3, 10 -> 10
-          paste0(lastTime1[7:8], collapse = ""), "일 ",
-          paste0(lastTime1[10:11], collapse = "") # 1차, 2차
-        )
-      }
-      
-      if (nrow(lastTime2) == 0) {
-        lastTime2 <- "데이터 없음"
-      }
-      else {
-        lastTime2 <- lastTime2[, 1]
-        lastTime2 <- strsplit(lastTime2, "")[[1]]
-        lastTime2 <- paste0(
-          as.numeric(paste0(lastTime2[5:6], collapse = "")), "월 ", # 03 -> 3, 10 -> 10
-          paste0(lastTime2[7:8], collapse = ""), "일 ",
-          paste0(lastTime2[10:11], collapse = "") # 1차, 2차
-        )
-      }
-      
-      tagList(
-        material_infobox(
-          width = 2, offset = 2,
-          contents = paste0(higher, "명"),
-          Infotitle = "상급의료기관 배정 필요",
-          Cardcolor = "#ff6363",
-          boxid = "higherBox"
-        ), # pink
-        material_infobox(
-          width = 2, contents = paste0(pat, "명"),
-          Infotitle = "의료기관 배정 필요",
-          Cardcolor = "#ff9d9d",
-          boxid = "patBox"
-        ), # sky
-        material_infobox(
-          width = 2, contents = lastTime2,
-          Infotitle = "업데이트시간(용인)",
-          Cardcolor = "#35a4c6",
-          boxid = "timeBox1"
-        ), # green
-        
-        material_infobox(
-          width = 2, contents = lastTime1,
-          Infotitle = "업데이트시간(기타)",
-          Cardcolor = "#35a4c6",
-          boxid = "timeBox2"
-        ) # purple
-      )
-    })
-    
-    shinyjs::show("unorder")
-    
-    dtobj <- datatable(
-      newtab,
-      escape = FALSE,
-      options = list(
-        # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
-        rowCallback = styleDT(9, 10),
-        dom = "tip",
-        order = list(list(9, "desc")),
-        pageLength = 50
-      ),
-      
-      selection = "single",
-      # filter = "top",
-      rownames = FALSE
-    )
-    dtobj
-  })
+  readData()
   
   observeEvent(input$timeBox1, {
     output$tab1 <- renderDataTable(
@@ -826,6 +833,11 @@ server <- function(input, output, session) {
     )
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
+  })
+  
+  observeEvent(input$reload, {
+    readData()
+    
   })
   
   observeEvent(input$unorder, {
