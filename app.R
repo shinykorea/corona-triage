@@ -185,6 +185,7 @@ ui <- function() {
             title = htmlOutput("pat", style = "text-align:center"),
             divider = TRUE,
             DT::dataTableOutput("tab0"),
+            uiOutput("note"),
             div(class = "divider", style = "margin-top:3em;"),
             DT::dataTableOutput("tab2")
           ),
@@ -947,6 +948,32 @@ server <- function(input, output, session) {
       HTML(txt)
     })
     
+    output$note <- renderUI({
+      tagList(
+        span( 
+          style ="position: relative;top: 1em;",
+          span(
+            style="background-color:#ff6363",
+            "　"
+          ),
+          "정기적 혈당측정이 필요하지 않고, 저혈당 발생 위험(인슐린 혹은 인슐린분지촉진제 사용)없는 경우 의료진 판단에 따라 입소 가능",
+          br(),
+          span(
+            style = "background-color: #ba9947;",
+            "　"
+          ),
+          "고형암, 혈액암, 고형장기이식, 조혈모세포이식, 면역억제제투여, 에이즈, 비장절제환자",
+          br(),
+          span(
+            style="background-color: #439e5b;",
+            "　"
+          ),
+          "천식포함",
+          br()
+        )
+      )
+    })
+    
     output$tab0 <- renderDataTable({
       tabzero <- thisTab %>% select(확진일자, 입소일자, 보건소, X24개월, 개월, 보호자, 기저질병, 독립생활, 거주지, 고위험군동거)
       colnames(tabzero) <- c(
@@ -955,12 +982,35 @@ server <- function(input, output, session) {
         "가정 내 독립생활 가능 여부", "적절한 거주지 유무", "고위험군과의 동거 여부"
       )
       tabzero <- tabzero[1, ]
+      
+      if(!is.na(tabzero[[7]])){
+        D <- strsplit(tabzero[[7]], ',')[[1]]
+        for(i in 1:length(D)){
+          if(grepl('조절되지 않는 당뇨', D[i]) ){
+            D[i] <- as.character(span('조절되지 않는 당뇨', br(), style = "border-left: solid 3px #ff6363; padding-left: 5px;"))
+            next
+          }
+          if(grepl('만성 폐질환', D[i])){
+            D[i] <- as.character(span('만성 폐질환', br(), style = "border-left: solid 3px #ba9947; padding-left: 5px;"))
+            next
+          }
+          if(grepl('면역저하자', D[i])){
+            D[i] <- as.character(span('면역저하자', br(), style = "border-left: solid 3px #439e5b; padding-left: 5px;"))
+            next
+          }
+          D[i] <- as.character(span(D[i], br()))
+        }
+        
+        tabzero[[7]] <- paste(D, collapse = '')
+      }
+      
       tabzero[1] <- lubridate::as_date(tabzero[[1]][1][[1]])
       tabzero[2] <- lubridate::as_date(tabzero[[2]][1][[1]])
       
       datatable(
-        tabzero[1, ],
+        tabzero,
         rownames = FALSE,
+        escape = FALSE, 
         selection = "none",
         options = list(
           dom = "tip",
