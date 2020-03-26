@@ -58,3 +58,48 @@ table {
 	left: calc(45%);
 	width: 15em;
 }
+
+.container-fab{
+    background: linear-gradient(90deg, rgba(0,92,171,0.5) 0%, rgba(0,92,172,0.5) 50%, rgba(186,153,71,0.5) 50%, rgba(186,153,71,0.5) 100%);
+    margin: 0 !important;
+	z-index:99 !important;
+}
+
+.panel-auth{
+	background: linear-gradient(90deg, rgba(0,92,171,0.5) 0%, rgba(0,92,172,1) 50%, rgba(186,153,71,1) 50%, rgba(186,153,71,0.5) 100%);
+	
+}
+
+.panel-primary{
+    border: solid 1em #35bdbb;
+}
+
+@font-face {
+  font-family: 'GGBatang_R'; /* 경기천년바탕 Regular */  
+  src: url('Batang_Regular.ttf')  format('truetype')
+}
+
+@font-face {
+  font-family: 'GGBatang_B'; /* 경기천년바탕 Bold */  
+  src: url('Batang_Bold.ttf')  format('truetype')
+}
+
+@font-face {
+  font-family: 'GGTitle_L'; /* 경기천년제목 Light */  
+  src: url('Title_Light.ttf')  format('truetype')
+}
+
+@font-face {
+  font-family: 'GGTitle_M'; /* 경기천년제목 Medium */  
+  src: url('Title_Medium.ttf')  format('truetype')
+}
+
+@font-face {
+  font-family: 'GGTitle_B'; /* 경기천년제목 Bold */  
+  src: url('Title_Bold.ttf')  format('truetype')
+}
+
+*{
+	font-family:GGTitle_L !important;
+}
+
