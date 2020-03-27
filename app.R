@@ -1019,7 +1019,6 @@ server <- function(input, output, session) {
     shinyjs::show('pat')
     shinyjs::show('img')
     
-    
     output$tab0 <- renderDataTable({
       tabzero <- thisTab %>% select(확진일자, 입소일자, 보건소, X24개월, 개월, 보호자, 기저질병, 독립생활, 거주지, 고위험군동거)
       colnames(tabzero) <- c(
@@ -1029,7 +1028,40 @@ server <- function(input, output, session) {
       )
       tabzero <- tabzero[1, ]
       
+      output$note <- renderUI({
+        tagList(
+          span()
+        )
+      })
+      
       if(!is.na(tabzero[[7]])){
+        
+        output$note <- renderUI({
+          tagList(
+            span( 
+              style ="position: relative;top: 1em;",
+              span(
+                style="background-color:#ff6363",
+                "　"
+              ),
+              "정기적 혈당측정이 필요하지 않고, 저혈당 발생 위험(인슐린 혹은 인슐린분지촉진제 사용)없는 경우 의료진 판단에 따라 입소 가능",
+              br(),
+              span(
+                style = "background-color: #ba9947;",
+                "　"
+              ),
+              "고형암, 혈액암, 고형장기이식, 조혈모세포이식, 면역억제제투여, 에이즈, 비장절제환자",
+              br(),
+              span(
+                style="background-color: #439e5b;",
+                "　"
+              ),
+              "천식포함",
+              br()
+            )
+          )
+        })
+        
         D <- strsplit(tabzero[[7]], ',')[[1]]
         for(i in 1:length(D)){
           if(grepl('조절되지 않는 당뇨', D[i]) ){
@@ -1050,6 +1082,7 @@ server <- function(input, output, session) {
         tabzero[[7]] <- paste(D, collapse = '')
       }
       
+      
       tabzero[1] <- lubridate::as_date(tabzero[[1]][1][[1]])
       tabzero[2] <- lubridate::as_date(tabzero[[2]][1][[1]])
       
@@ -1067,7 +1100,6 @@ server <- function(input, output, session) {
         )
       )
     })
-    
     # specific table content -------------------------------------------------
     output$tab2 <- renderDataTable({
       thisTab <- thisTab %>%
