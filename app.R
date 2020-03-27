@@ -414,6 +414,8 @@ readSurvey <- function(auth, Survey) {
     "개월", "보호자", "기저질병", "초기산소", "독립생활",
     "거주지", "고위험군동거"
   )
+  Survey$주민등록번호 = as.character(Survey$주민등록번호) 
+  
   return(data.frame(Survey))
 }
 
@@ -461,12 +463,15 @@ readPat <- function(auth, Link, Link2) {
     )
   }
   
+  
   if(nrow(Pat)){
     colnames(Pat) <- c(
       "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
       "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
       "퇴원여부", "센터", "입력날짜", "차수"
     )
+    
+    Pat$주민등록번호 <- as.character(Pat$주민등록번호)
     
     Age <- sapply(1:nrow(Pat), function(i) {
       # Year
@@ -511,13 +516,11 @@ readPat <- function(auth, Link, Link2) {
     # 생년월일
     
     Birth <- sapply(Pat$주민등록번호, function(i) {
-      (i - i %% 10000000) / 10000000
+      substr(i,1,6)
     })
     
     Sex <- sapply(Pat$주민등록번호, function(i) {
-      i <- i %% 10000000
-      i <- (i - i %% 1000000) / 1000000
-      ifelse(i %% 2 == 1, "남", "여")
+      ifelse(as.numeric(substr(i,7,7)) %% 2 == 1, "남", "여")
     })
     
     Pat <- Pat %>%
@@ -525,12 +528,13 @@ readPat <- function(auth, Link, Link2) {
       rename(생년월일 = Birth) %>%
       cbind(Sex) %>%
       rename(성별 = Sex)
-    
   }
   
   load('PatBackup.RData') # Backup Data
   Pat <- rbind(PatB, Pat)
+
   
+    
   return(data.frame(Pat))
 }
 
