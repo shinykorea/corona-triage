@@ -414,7 +414,12 @@ readSurvey <- function(auth, Survey) {
     "개월", "보호자", "기저질병", "초기산소", "독립생활",
     "거주지", "고위험군동거"
   )
+  
   Survey$주민등록번호 = as.character(Survey$주민등록번호) 
+    
+  # ------ 제일 나중에 업데이트 한걸로 반영영
+  
+  Survey <- Survey %>% group_by(이름, 주민등록번호) %>% filter(시간 == max(시간)) 
   
   return(data.frame(Survey))
 }
@@ -532,8 +537,6 @@ readPat <- function(auth, Link, Link2) {
   
   load('PatBackup.RData') # Backup Data
   Pat <- rbind(PatB, Pat)
-
-  
     
   return(data.frame(Pat))
 }
@@ -720,7 +723,6 @@ server <- function(input, output, session) {
       )
       dtobj
     })
-    
     
   }
   
