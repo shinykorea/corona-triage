@@ -149,6 +149,9 @@ backupPat = function(auth, Link, Link2){
     rename(생년월일 = Birth) %>%
     cbind(Sex) %>%
     rename(성별 = Sex)
+  
+  Pat$주민등록번호 <- as.character(Pat$주민등록번호)
+  
   PatB <- data.frame(Pat)
   save(PatB, file = 'PatBackup.RData')
 }

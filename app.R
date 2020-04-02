@@ -469,7 +469,7 @@ readPat <- function(auth, Link, Link2) {
   }
   
   
-  if(nrow(Pat)){
+  if(length(Pat)){
     colnames(Pat) <- c(
       "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
       "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
