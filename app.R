@@ -398,10 +398,15 @@ asDate <- function(i) {
   ), origin = "1970-01-01")
 }
 
-readSurvey <- function() {
-  sheets_auth("") # hide.
-  Link <- "" # hide.
-  Survey <- read_sheet(Link)
+readSurvey <- function(auth, Survey) {
+  sheets_auth(auth) # hide.
+  Link <- Survey # hide.
+  
+  withProgress(
+    message = "데이터 읽는 중 (설문)",{
+      Survey <- read_sheet(Link)
+    }
+  )
   
   colnames(Survey) <- c(
     "시간", "목적", "이름", "주민등록번호", "확진일자",
@@ -409,204 +414,144 @@ readSurvey <- function() {
     "개월", "보호자", "기저질병", "초기산소", "독립생활",
     "거주지", "고위험군동거"
   )
+  
+  Survey$주민등록번호 = as.character(Survey$주민등록번호) 
+    
+  # ------ 제일 나중에 업데이트 한걸로 반영영
+  
+  Survey <- Survey %>% group_by(이름, 주민등록번호) %>% filter(시간 == max(시간)) 
+  
   return(data.frame(Survey))
 }
 
-readPat <- function() {
-  sheets_auth("") # hide.
-  Link <- "" # hide.
-  
-  sheets <- sheets_sheets(Link)
-  sheets <- sheets[which(lubridate::as_date(sheets) <= Sys.Date())]
-  
-  Pat <- c()
-  withProgress(
-    message = "데이터 읽는 중 (용인)",
-    for (i in 1:length(sheets)) {
-      incProgress(1 / length(sheets), detail = paste0(sheets[i], " 시트 읽는 중"))
-      PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
-      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-      Pat <- rbind(Pat, PatTemp)
-    }
-  )
-  
-  colnames(Pat) <- c(
-    "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
-    "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
-    "퇴원여부", "센터", "입력날짜", "차수"
-  )
+readPat <- function(auth, Link, Link2) {
+  sheets_auth(auth) # hide.
   
   today <- Sys.Date()
   
-  Age <- sapply(1:nrow(Pat), function(i) {
-    # Year
-    if (substr(Pat$주민등록번호[i], 7, 7) > 2) { ## after 2000
-      day <- (today - as.Date(paste0("20", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
-    }
-    else { # before 2000
-      day <- (today - as.Date(paste0("19", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
-    }
-    floor(day / 365)
-  })
-  
-  ### 중증도 계산 --------------------------------
-  
-  TRIS <- sapply(1:nrow(Pat), function(i) {
-    Pat[i, ] %>%
-      select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
-      triage()
-  })
-  rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
-  TRIS <- data.frame(t(TRIS), stringsAsFactors = FALSE)
-  
-  Pat <- Pat %>% cbind(나이 = Age)
-  Pat <- Pat %>% cbind(TRIS)
-  Pat$중증도 <- as.numeric(Pat$중증도)
-  
-  ## 날짜 decompose ---------------
-  
-  DATE <- sapply(1:nrow(Pat), function(i) {
-    if (Pat$차수[i] == 1) {
-      return(paste0(Pat$입력날짜[i], " 1차"))
-    }
-    return(paste0(Pat$입력날짜[i], " 2차"))
-  }, USE.NAMES = FALSE)
-  
-  Pat <- Pat %>%
-    cbind(DATE) %>%
-    rename(날짜 = DATE)
-  
-  Pat$날짜 <- as.character(Pat$날짜)
-  
-  # 생년월일
-  
-  Birth <- sapply(Pat$주민등록번호, function(i) {
-    (i - i %% 10000000) / 10000000
-  })
-  
-  Sex <- sapply(Pat$주민등록번호, function(i) {
-    i <- i %% 10000000
-    i <- (i - i %% 1000000) / 1000000
-    ifelse(i %% 2 == 1, "남", "여")
-  })
-  
-  Pat <- Pat %>%
-    cbind(Birth) %>%
-    rename(생년월일 = Birth) %>%
-    cbind(Sex) %>%
-    rename(성별 = Sex)
-  
-  return(data.frame(Pat))
-}
-
-readPat2 <- function() {
-  sheets_auth("") # hide.
-  Link <- "" # hide.
-  
   sheets <- sheets_sheets(Link)
-  sheets <- sheets[which(lubridate::as_date(sheets) <= Sys.Date())]
+  sheets <- sheets[which(lubridate::as_date(sheets) == today)]
   
   Pat <- c()
+  if(length(sheets)){
+    withProgress(
+      message = "데이터 읽는 중 (용인)",{
+        PatTemp <- read_sheet(Link, sheet = sheets) # first sheets
+        PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+        PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+        PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+        PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+        PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+        PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+        PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+        Pat <- rbind(Pat, PatTemp)
+      }
+    )
+  }
   
-  withProgress(
-    message = "데이터 읽는 중 (이천)",
-    for (i in 1:length(sheets)) {
-      incProgress(1 / length(sheets), detail = paste0(sheets[i], " 시트 읽는 중"))
-      PatTemp <- read_sheet(Link, sheet = sheets[i]) # first sheets
-      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-      Pat <- rbind(Pat, PatTemp)
-    }
-  )
+  sheets <- sheets_sheets(Link2)
+  sheets <- sheets[which(lubridate::as_date(sheets) == today)]
   
-  colnames(Pat) <- c(
-    "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
-    "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
-    "퇴원여부", "센터", "입력날짜", "차수"
-  )
+  if(length(sheets)){
+    withProgress(
+      message = "데이터 읽는 중 (이천)",{
+        PatTemp <- read_sheet(Link2, sheet = sheets) # first sheets
+        PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+        PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+        PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+        PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+        PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+        PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+        PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+        Pat <- rbind(Pat, PatTemp)
+      }
+    )
+  }
   
-  today <- Sys.Date()
   
-  Age <- sapply(1:nrow(Pat), function(i) {
-    # Year
-    if (substr(Pat$주민등록번호[i], 7, 7) > 2) { ## after 2000
-      day <- (today - as.Date(paste0("20", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
-    }
-    else { # before 2000
-      day <- (today - as.Date(paste0("19", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
-    }
-    floor(day / 365)
-  })
+  if(length(Pat)){
+    colnames(Pat) <- c(
+      "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
+      "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
+      "퇴원여부", "센터", "입력날짜", "차수"
+    )
+    
+    Pat$주민등록번호 <- as.character(Pat$주민등록번호)
+    
+    Age <- sapply(1:nrow(Pat), function(i) {
+      # Year
+      if (substr(Pat$주민등록번호[i], 7, 7) > 2) { ## after 2000
+        day <- (today - as.Date(paste0("20", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
+      }
+      else { # before 2000
+        day <- (today - as.Date(paste0("19", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
+      }
+      floor(day / 365)
+    })
+    
+    ### 중증도 계산 --------------------------------
+    
+    TRIS <- sapply(1:nrow(Pat), function(i) {
+      Pat[i, ] %>%
+        select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
+        triage()
+    })
+    rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
+    TRIS <- data.frame(t(TRIS), stringsAsFactors = FALSE)
+    
+    Pat <- Pat %>% cbind(나이 = Age)
+    Pat <- Pat %>% cbind(TRIS)
+    Pat$중증도 <- as.numeric(Pat$중증도)
+    
+    ## 날짜 decompose ---------------
+    
+    DATE <- sapply(1:nrow(Pat), function(i) {
+      if (Pat$차수[i] == 1) {
+        return(paste0(Pat$입력날짜[i], " 1차"))
+      }
+      return(paste0(Pat$입력날짜[i], " 2차"))
+    }, USE.NAMES = FALSE)
+    
+    Pat <- Pat %>%
+      cbind(DATE) %>%
+      rename(날짜 = DATE)
+    
+    Pat$날짜 <- as.character(Pat$날짜)
+    
+    # 생년월일
+    
+    Birth <- sapply(Pat$주민등록번호, function(i) {
+      substr(i,1,6)
+    })
+    
+    Sex <- sapply(Pat$주민등록번호, function(i) {
+      ifelse(as.numeric(substr(i,7,7)) %% 2 == 1, "남", "여")
+    })
+    
+    Pat <- Pat %>%
+      cbind(Birth) %>%
+      rename(생년월일 = Birth) %>%
+      cbind(Sex) %>%
+      rename(성별 = Sex)
+  }
   
-  ### 중증도 계산 --------------------------------
-  
-  TRIS <- sapply(1:nrow(Pat), function(i) {
-    Pat[i, ] %>%
-      select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
-      triage()
-  })
-  rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
-  TRIS <- data.frame(t(TRIS), stringsAsFactors = FALSE)
-  
-  Pat <- Pat %>% cbind(나이 = Age)
-  Pat <- Pat %>% cbind(TRIS)
-  Pat$중증도 <- as.numeric(Pat$중증도)
-  
-  ## 날짜 decompose ---------------
-  
-  DATE <- sapply(1:nrow(Pat), function(i) {
-    if (Pat$차수[i] == 1) {
-      return(paste0(Pat$입력날짜[i], " 1차"))
-    }
-    return(paste0(Pat$입력날짜[i], " 2차"))
-  }, USE.NAMES = FALSE)
-  
-  Pat <- Pat %>%
-    cbind(DATE) %>%
-    rename(날짜 = DATE)
-  
-  Pat$날짜 <- as.character(Pat$날짜)
-  
-  # 생년월일
-  
-  Birth <- sapply(Pat$주민등록번호, function(i) {
-    (i - i %% 10000000) / 10000000
-  })
-  
-  Sex <- sapply(Pat$주민등록번호, function(i) {
-    i <- i %% 10000000
-    i <- (i - i %% 1000000) / 1000000
-    ifelse(i %% 2 == 1, "남", "여")
-  })
-  
-  Pat <- Pat %>%
-    cbind(Birth) %>%
-    rename(생년월일 = Birth) %>%
-    cbind(Sex) %>%
-    rename(성별 = Sex)
-  
+  load('PatBackup.RData') # Backup Data
+  Pat <- rbind(PatB, Pat)
+    
   return(data.frame(Pat))
 }
-
 
 server <- function(input, output, session) {
   
+  auth = "" # hide 
+  Link = "" # hide, 용인
+  Link2 = "" # hide, 이천
+  Survey = "" # hide, 설문
   
-  readData <- function(){
+  readData <- function(auth, Link, Link2, Survey){
     Pat <<- reactive({
-      rbind(readPat(), readPat2()) %>% 
-        inner_join(readSurvey(), by = c("주민등록번호", "센터", "이름"))
+      readPat(auth, Link, Link2) %>% 
+        inner_join(readSurvey(auth, Survey), by = c("주민등록번호", "센터", "이름"))
     })
     
     output$tab1 <- renderDataTable({
@@ -779,7 +724,6 @@ server <- function(input, output, session) {
       dtobj
     })
     
-    
   }
   
   # off scientific notation ( 주민번호 )
@@ -797,7 +741,7 @@ server <- function(input, output, session) {
   #Pat <- reactive(rbind(Pat(), readPat2()))
   #Survey <- reactive(readSurvey())
   
-  readData()
+  readData(auth, Link, Link2, Survey)
   
   observeEvent(input$timeBox1, {
     output$tab1 <- renderDataTable(
@@ -852,9 +796,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$reload, {
-    readData()
-    
-    
+    readData(auth, Link, Link2, Survey)
   })
   
   observeEvent(input$unorder, {
