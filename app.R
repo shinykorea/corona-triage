@@ -425,67 +425,61 @@ readSurvey <- function(auth, Survey) {
 }
 
 readPat <- function(auth, Link, Link2, Link3) {
-  sheets_auth(auth) # hide.
   
+  # 첫실행 시 
+  ## googledrive::drive_auth(auth, use_oob = T)  
+  
+  googledrive::drive_auth(auth) # hide.
   today <- Sys.Date()
   
-  sheets <- sheets_sheets(Link)
-  sheets <- sheets[which(lubridate::as_date(sheets) == today)]
+  Pat <- NULL
+  withProgress(
+    message = "데이터 읽는 중 (용인)",{
+      googledrive::drive_download(Link, overwrite = T)
+      PatTemp <- readxl::excel_sheets("G-CoMS Data - 용인.xlsx") %>% 
+        lapply(function(x){readxl::read_excel("G-CoMS Data - 용인.xlsx", sheet = x)}) %>% Reduce(rbind, .)
+      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+      Pat <- rbind(Pat, PatTemp)
+    }
+  )
   
-  Pat <- c()
-  if(length(sheets)){
-    withProgress(
-      message = "데이터 읽는 중 (용인)",{
-        PatTemp <- read_sheet(Link, sheet = sheets) # first sheets
-        PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-        PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-        PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-        PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-        PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-        PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-        PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-        Pat <- rbind(Pat, PatTemp)
-      }
-    )
-  }
+  withProgress(
+    message = "데이터 읽는 중 (자가)",{
+      googledrive::drive_download(Link2, overwrite = T)
+      PatTemp <- readxl::excel_sheets("G-CoMS Data - 자가.xlsx") %>% 
+        lapply(function(x){readxl::read_excel("G-CoMS Data - 자가.xlsx", sheet = x)}) %>% Reduce(rbind, .)
+      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+      Pat <- rbind(Pat, PatTemp)
+    }
+  )
   
-  sheets <- sheets_sheets(Link2)
-  sheets <- sheets[which(lubridate::as_date(sheets) == today)]
-  
-  if(length(sheets)){
-    withProgress(
-      message = "데이터 읽는 중 (자가)",{
-        PatTemp <- read_sheet(Link2, sheet = sheets) # first sheets
-        PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-        PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-        PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-        PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-        PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-        PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-        PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-        Pat <- rbind(Pat, PatTemp)
-      }
-    )
-  }
-  
-  sheets <- sheets_sheets(Link3)
-  sheets <- sheets[which(lubridate::as_date(sheets) == today)]
-  
-  if(length(sheets)){
-    withProgress(
-      message = "데이터 읽는 중 (이천)",{
-        PatTemp <- read_sheet(Link3, sheet = sheets) # first sheets
-        PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-        PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-        PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-        PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-        PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-        PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-        PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-        Pat <- rbind(Pat, PatTemp)
-      }
-    )
-  }
+  withProgress(
+    message = "데이터 읽는 중 (이천)",{
+      googledrive::drive_download(Link3, overwrite = T)
+      PatTemp <- readxl::excel_sheets("G-CoMS Data - 이천.xlsx") %>% 
+        lapply(function(x){readxl::read_excel("G-CoMS Data - 이천.xlsx", sheet = x)}) %>% Reduce(rbind, .)
+      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+      Pat <- rbind(Pat, PatTemp)
+    }
+  )
   
   
   if(length(Pat)){
