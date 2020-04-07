@@ -562,7 +562,7 @@ readPat <- function(auth, Link, Link2, Link3) {
 
 server <- function(input, output, session) {
   
-  auth = "" # hide 
+  auth = "hwanistic@gmail.com" # hide 
   Link = "" # hide, 용인
   Link2 = "" # hide, 자가
   Link3 = "" # hide, 이천
@@ -619,7 +619,7 @@ server <- function(input, output, session) {
       newtab <- newtab %>% inner_join(temp)
       newtab <- newtab %>% select(-날짜)
       newtab <<- newtab
-      
+      oritab <<- newtab
       rm(temp)
       
       ########################
@@ -735,17 +735,18 @@ server <- function(input, output, session) {
           
           material_infobox(
             width = 2, contents = lastTime1,
-            Infotitle = "업데이트시간(자가)",
+            Infotitle = "업데이트시간(이천)",
             Cardcolor = "#35a4c6",
-            boxid = "timeBox2"
+            boxid = "timeBox3"
           ), # purple
           
           material_infobox(
             width = 2, contents = lastTime1,
-            Infotitle = "업데이트시간(이천)",
+            Infotitle = "업데이트시간(자가)",
             Cardcolor = "#35a4c6",
-            boxid = "timeBox3"
+            boxid = "timeBox2"
           ) # purple
+         
         )
       })
       
@@ -755,7 +756,6 @@ server <- function(input, output, session) {
       shinyjs::hide('note')
       shinyjs::hide('pat')
       shinyjs::hide('img')
-      
       
       dtobj <- datatable(
         newtab,
@@ -786,6 +786,7 @@ server <- function(input, output, session) {
     timeout = 60 * 24 * 30
   )
   
+  oritab <- ""
   newtab <- ""
   
   #Pat <- reactive(readPat())
@@ -795,9 +796,11 @@ server <- function(input, output, session) {
   readData(auth, Link, Link2, Link3, Survey)
   
   observeEvent(input$timeBox1, {
+    newtab <<- oritab %>% filter(센터 == "용인")
+    
     output$tab1 <- renderDataTable(
       datatable(
-        newtab %>% filter(센터 == "용인"),
+        newtab,
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
@@ -809,8 +812,9 @@ server <- function(input, output, session) {
         selection = "single",
         # filter = "top",
         rownames = FALSE
-      )
+      ) 
     )
+    output$tab1 <- renderDataTable(newtab)
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
     shinyjs::hide('tab0')
@@ -821,9 +825,11 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$timeBox2, {
+    newtab <<- oritab %>% filter(센터 == "자가")
+    
     output$tab1 <- renderDataTable(
       datatable(
-        newtab %>% filter(센터 == "자가"),
+        newtab,
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
@@ -835,8 +841,9 @@ server <- function(input, output, session) {
         selection = "single",
         # filter = "top",
         rownames = FALSE
-      )
+      ) 
     )
+    output$tab1 <- renderDataTable( newtab )
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
     shinyjs::hide('tab0')
@@ -847,9 +854,11 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$timeBox3, {
+    newtab <<- oritab %>% filter(센터 == "이천")
+    
     output$tab1 <- renderDataTable(
       datatable(
-        newtab %>% filter(센터 == "이천"),
+        newtab,
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
@@ -861,7 +870,7 @@ server <- function(input, output, session) {
         selection = "single",
         # filter = "top",
         rownames = FALSE
-      )
+      ) 
     )
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
@@ -879,7 +888,7 @@ server <- function(input, output, session) {
   observeEvent(input$unorder, {
     output$tab1 <- renderDataTable(
       datatable(
-        newtab,
+        oritab,
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
@@ -905,7 +914,7 @@ server <- function(input, output, session) {
     
     output$tab1 <- renderDataTable(
       datatable(
-        newtab,
+        oritab,
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
@@ -933,7 +942,7 @@ server <- function(input, output, session) {
     shinyjs::hide("unorder")
     output$tab1 <- renderDataTable({
       datatable(
-        newtab %>% filter(중증도 >= 3),
+        oritab %>% filter(중증도 >= 3),
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
@@ -959,7 +968,7 @@ server <- function(input, output, session) {
     shinyjs::hide("unorder")
     output$tab1 <- renderDataTable({
       datatable(
-        newtab %>% filter(중증도 == 2),
+        oritab %>% filter(중증도 == 2),
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
