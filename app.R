@@ -814,7 +814,7 @@ server <- function(input, output, session) {
         rownames = FALSE
       ) 
     )
-    output$tab1 <- renderDataTable(newtab)
+    
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
     shinyjs::hide('tab0')
@@ -843,7 +843,7 @@ server <- function(input, output, session) {
         rownames = FALSE
       ) 
     )
-    output$tab1 <- renderDataTable( newtab )
+    
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
     shinyjs::hide('tab0')
