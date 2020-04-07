@@ -1,4 +1,8 @@
-backupPat = function(auth, Link, Link2){
+backupPat = function(auth, Link, Link2, Link3){
+  
+  # Link -> 용인
+  # Link2 -> 자가
+  # Link3 -> 이천
   
   triage <- function(v) {
     PT <- PCO <- 0
@@ -86,6 +90,21 @@ backupPat = function(auth, Link, Link2){
     Pat <- rbind(Pat, PatTemp)
   }
   
+  sheets <- sheets_sheets(Link3)
+  sheets <- sheets[which(lubridate::as_date(sheets) < today)] # 오늘 이전 탭만 읽음
+  
+  for (i in 1:length(sheets)) {
+    PatTemp <- read_sheet(Link3, sheet = sheets[i]) # first sheets
+    PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+    PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+    PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+    PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+    PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+    PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+    PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+    Pat <- rbind(Pat, PatTemp)
+  }
+  
   colnames(Pat) <- c(
     "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
     "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
@@ -156,4 +175,4 @@ backupPat = function(auth, Link, Link2){
   save(PatB, file = 'PatBackup.RData')
 }
 
-backupPat(auth, Link, Link2)
+backupPat(auth, Link, Link2, Link3)
