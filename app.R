@@ -134,7 +134,7 @@ ui <- function() {
     
     material_tabs(
       tabs = c(
-        "생활치료센터" = "facility" # ,
+        "가정대기환자 홈케어시스템" = "facility" # ,
         # "가정" = "home" # ,
         # "구글시트예시" = 'google'
       ),
@@ -416,7 +416,7 @@ readSurvey <- function(auth, Survey) {
   )
   
   Survey$주민등록번호 = as.character(Survey$주민등록번호) 
-    
+  
   # ------ 제일 나중에 업데이트 한걸로 반영영
   
   Survey <- Survey %>% group_by(이름, 주민등록번호) %>% filter(시간 == max(시간)) 
@@ -425,35 +425,32 @@ readSurvey <- function(auth, Survey) {
 }
 
 readPat <- function(auth, Link, Link2, Link3) {
-  
-  # 첫실행 시 
-  ## googledrive::drive_auth(auth, use_oob = T)  
-  
   googledrive::drive_auth(auth) # hide.
+  
   today <- Sys.Date()
   
   Pat <- NULL
-  withProgress(
-    message = "데이터 읽는 중 (용인)",{
-      googledrive::drive_download(Link, overwrite = T)
-      PatTemp <- readxl::excel_sheets("G-CoMS Data - 용인.xlsx") %>% 
-        lapply(function(x){readxl::read_excel("G-CoMS Data - 용인.xlsx", sheet = x)}) %>% Reduce(rbind, .)
-      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-      Pat <- rbind(Pat, PatTemp)
-    }
-  )
+  #withProgress(
+  #  message = "데이터 읽는 중 (용인)",{
+  #    googledrive::drive_download(Link, overwrite = T)
+  #    PatTemp <- readxl::excel_sheets("G-CoMS Data - 용인.xlsx") %>% 
+  #      lapply(function(x){readxl::read_excel("G-CoMS Data - 용인.xlsx", sheet = x)}) %>% Reduce(rbind, .)
+  #    PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+  #    PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+  #    PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+  #    PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+  #    PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+  #    PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+  #    PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+  #    Pat <- rbind(Pat, PatTemp)
+  #  }
+  #)
   
   withProgress(
     message = "데이터 읽는 중 (자가)",{
       googledrive::drive_download(Link2, overwrite = T)
       PatTemp <- readxl::excel_sheets("G-CoMS Data - 자가.xlsx") %>% 
-        lapply(function(x){readxl::read_excel("G-CoMS Data - 자가.xlsx", sheet = x)}) %>% Reduce(rbind, .)
+        lapply(function(x){readxl::read_excel("G-CoMS Data - 자가.xlsx", sheet = x)}) %>% do.call(plyr::rbind.fill, .)
       PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
       PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
       PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
@@ -461,32 +458,33 @@ readPat <- function(auth, Link, Link2, Link3) {
       PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
       PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
       PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-      Pat <- rbind(Pat, PatTemp)
+      PatTemp$시간 <- format(PatTemp$시간, "%H:%M")
+      Pat <- plyr::rbind.fill(Pat, PatTemp)
     }
   )
   
-  withProgress(
-    message = "데이터 읽는 중 (이천)",{
-      googledrive::drive_download(Link3, overwrite = T)
-      PatTemp <- readxl::excel_sheets("G-CoMS Data - 이천.xlsx") %>% 
-        lapply(function(x){readxl::read_excel("G-CoMS Data - 이천.xlsx", sheet = x)}) %>% Reduce(rbind, .)
-      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-      Pat <- rbind(Pat, PatTemp)
-    }
-  )
+  #withProgress(
+  #  message = "데이터 읽는 중 (이천)",{
+  #    googledrive::drive_download(Link3, overwrite = T)
+  #    PatTemp <- readxl::excel_sheets("G-CoMS Data - 이천.xlsx") %>% 
+  #      lapply(function(x){readxl::read_excel("G-CoMS Data - 이천.xlsx", sheet = x)}) %>% Reduce(rbind, .)
+  #    PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+  #    PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+  #    PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+  #    PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+  #    PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+  #    PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+  #    PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+  #    Pat <- plyr::rbind.fill(Pat, PatTemp)
+  #  }
+  #)
   
   
   if(length(Pat)){
-    colnames(Pat) <- c(
+    colnames(Pat)[1:15] <- c(
       "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
       "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
-      "퇴원여부", "센터", "입력날짜", "차수"
+      "퇴원여부", "센터", "입력날짜", "차수", "입력시간"
     )
     
     Pat$주민등록번호 <- as.character(Pat$주민등록번호)
@@ -548,19 +546,17 @@ readPat <- function(auth, Link, Link2, Link3) {
       rename(성별 = Sex)
   }
   
-  load('PatBackup.RData') # Backup Data
-  Pat <- rbind(PatB, Pat)
   Pat$주민등록번호 <- as.character(Pat$주민등록번호)    
   return(data.frame(Pat))
 }
 
 server <- function(input, output, session) {
   
-  auth = "hwanistic@gmail.com" # hide 
-  Link = "" # hide, 용인
-  Link2 = "" # hide, 자가
-  Link3 = "" # hide, 이천
-  Survey = "" # hide, 설문
+  auth = "jinseob2kim@gmail.com"
+  Link = "https://docs.google.com/spreadsheets/d/1G1lPc-N-u3z6kITyr2z3nnyAdf_BKxcLiot7qe_jpKs"
+  Link2 = "http://docs.google.com/spreadsheets/d/1gKGw7_wzymdq2VTvVBTXUi__dBBKEy_2nzOMIpCxc2I"
+  Link3 = "http://docs.google.com/spreadsheets/d/16UNiR49u4sJH9uCceNDzmyC62D0TOybf0xKA-JR4EXo"
+  Survey = "http://docs.google.com/spreadsheets/d/1DRPQLLmQXzM_otTSBd_E1uq2srkO08r3T69rykLoABk"
   
   readData <- function(auth, Link, Link2, Link3, Survey){
     Pat <<- reactive({
@@ -708,39 +704,39 @@ server <- function(input, output, session) {
         
         tagList(
           material_infobox(
-            width = 2, offset = 1,
+            width = 3, offset = 1,
             contents = paste0(higher, "명"),
             Infotitle = "상급의료기관 배정 필요",
             Cardcolor = "#ff6363",
             boxid = "higherBox"
           ), # pink
           material_infobox(
-            width = 2, contents = paste0(pat, "명"),
+            width = 3, contents = paste0(pat, "명"),
             Infotitle = "의료기관 배정 필요",
             Cardcolor = "#ff9d9d",
             boxid = "patBox"
           ), # sky
-          material_infobox(
-            width = 2, contents = lastTime2,
-            Infotitle = "업데이트시간(용인)",
-            Cardcolor = "#35a4c6",
-            boxid = "timeBox1"
-          ), # green
+          #material_infobox(
+          #  width = 2, contents = lastTime2,
+          #  Infotitle = "업데이트시간(용인)",
+          #  Cardcolor = "#35a4c6",
+          #  boxid = "timeBox1"
+          #), # green
+          
+          #material_infobox(
+          #  width = 2, contents = lastTime3,
+          #  Infotitle = "업데이트시간(이천)",
+          #  Cardcolor = "#35a4c6",
+          #  boxid = "timeBox3"
+          #), # purple
           
           material_infobox(
-            width = 2, contents = lastTime1,
-            Infotitle = "업데이트시간(이천)",
-            Cardcolor = "#35a4c6",
-            boxid = "timeBox3"
-          ), # purple
-          
-          material_infobox(
-            width = 2, contents = lastTime1,
+            width = 3, contents = lastTime1,
             Infotitle = "업데이트시간(자가)",
             Cardcolor = "#35a4c6",
             boxid = "timeBox2"
           ) # purple
-         
+          
         )
       })
       
@@ -808,7 +804,7 @@ server <- function(input, output, session) {
         rownames = FALSE
       ) 
     )
-    
+    #output$tab1 <- renderDataTable(newtab)
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
     shinyjs::hide('tab0')
@@ -837,7 +833,7 @@ server <- function(input, output, session) {
         rownames = FALSE
       ) 
     )
-    
+    #output$tab1 <- renderDataTable( newtab )
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
     shinyjs::hide('tab0')
@@ -1124,7 +1120,7 @@ server <- function(input, output, session) {
     # specific table content -------------------------------------------------
     output$tab2 <- renderDataTable({
       thisTab <- thisTab %>%
-        select(주민등록번호, 입력날짜, 차수, 중증도, PCR, 체온, 의식지수, 심리지수, 심폐지수, 호흡곤란, 산소포화도, 호흡수, 맥박) %>%
+        select(주민등록번호, 입력날짜, 입력시간, 담당자명, 차수, 중증도, PCR, 체온, 의식지수, 심리지수, 심폐지수, 호흡곤란, 산소포화도, 호흡수, 맥박) %>%
         inner_join(newtab %>% select(주민등록번호)) %>%
         select(-주민등록번호, -이름)
       
