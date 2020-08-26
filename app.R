@@ -406,10 +406,10 @@ styleDT <- function(point, change) {
 }
 
 styleDT2 <- function(point) {
-  temp <- 4
-  mental <- 5
-  anxiety <- 6
-  dyspnea <- 7
+  temp <- 6
+  mental <- 7
+  anxiety <- 8
+  dyspnea <- 10
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
   col4 <- "#ffaaa5" #
@@ -1177,7 +1177,7 @@ server <- function(input, output, session) {
           escape = FALSE,
           selection = "none",
           options = list(
-            rowCallback = styleDT2(7),
+            rowCallback = styleDT2(4),
             dom = "tip",
             autoWidth = FALSE,
             # order = list(list(TRIIDX, "desc")),
