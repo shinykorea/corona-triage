@@ -68,6 +68,7 @@ myButton <- function(inputId, label, width = NULL, onClick = NULL, ...) {
 triage <- function(v) {
   PT <- PCO <- 0
   POT <- 0
+  PBC <- PP <- PO <- 0
   if (is.na(v$호흡곤란)) {
     PCF <- ""
     # NO POT ADD
@@ -112,7 +113,50 @@ triage <- function(v) {
     POT <- POT + PCO
   }
   
-  return(c(PT, PCF, PCO, PM, POT))
+  O <- v$산소포화도
+  if (is.na(O)) {
+    PO <- ""
+  } else{
+    if (O <= 95) {
+      PO <- 2
+    }
+    if (O <= 93) {
+      PO <- 3
+    }
+    POT <- POT + PO
+  }
+  
+  BC <- v$호흡수
+  if (is.na(BC)) {
+    PBC <- ""
+  } else{
+    if (BC >= 25 || BC <= 8) {
+      PBC <- 3
+    }
+    if ((BC >= 9 & BC <= 11) | (BC >= 21 & BC <= 24)) {
+      PBC <- 2
+    }
+    POT <- POT + PBC
+  }
+  
+  P <- v$맥박
+  if (is.na(P)) {
+    PP <- ""
+  } else{
+    if (P > 110 || P <= 40) {
+      PP <- 3
+    }
+    if ((P >= 101 & P <=110) | (P >= 41 & P <= 50)) {
+      PP <- 2
+    }
+    POT <- POT + PP
+  }
+  
+  
+  
+  
+  
+  return(c(PT, PCF, PCO, PM, PO, PBC, PP, POT))
 }
 
 ui <- function() {
@@ -459,7 +503,7 @@ readPat <- function(auth, Link, Link2, Link3) {
       PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
       PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
       PatTemp$시간 <- format(PatTemp$시간, "%H:%M")
-      Pat <- plyr::rbind.fill(Pat, PatTemp)
+      Pat <- plyr::rbind.fill(Pat, filter(PatTemp, date >= 20200822))
     }
   )
   
@@ -504,10 +548,10 @@ readPat <- function(auth, Link, Link2, Link3) {
     
     TRIS <- sapply(1:nrow(Pat), function(i) {
       Pat[i, ] %>%
-        select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
+        select(체온, 호흡곤란, 의식저하, 가벼운불안, 산소포화도, 호흡수, 맥박) %>%
         triage()
     })
-    rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
+    rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "산소포화도지수", "호흡수지수", "맥박지수",  "중증도")
     TRIS <- data.frame(t(TRIS), stringsAsFactors = FALSE)
     
     Pat <- Pat %>% cbind(나이 = Age)
@@ -569,7 +613,7 @@ server <- function(input, output, session) {
       ## 증감 계산 -------------------------------------------------------------
       
       discharged <- Pat() %>%
-        filter(!is.na(퇴원여부)) %>%
+        filter(!is.na(퇴원여부) & `퇴원여부` != 0) %>%
         select(이름) %>%
         unlist(use.names = FALSE)
       
@@ -581,7 +625,7 @@ server <- function(input, output, session) {
         filter(!is.na(호흡곤란)) %>%
         filter(!이름 %in% discharged) %>%
         filter(날짜 == max(날짜)) %>% # recent data
-        select(주민등록번호, 이름, 성별, 나이, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
+        select(주민등록번호, 이름, 성별, 나이, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 산소포화도지수, 호흡수지수, 맥박지수, 중증도, 날짜)
       
       temp <- Pat() %>%
         group_by(이름) %>%
@@ -752,7 +796,7 @@ server <- function(input, output, session) {
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
-          rowCallback = styleDT(9, 10),
+          rowCallback = styleDT(12, 13),
           dom = "tip",
           order = list(list(9, "desc")),
           pageLength = 50
@@ -994,12 +1038,12 @@ server <- function(input, output, session) {
         thisTab$이름[1], " / ",
         thisTab$성별[1], " / ",
         thisTab$나이[1], " / ",
-        thisTab$센터[1], "센터 / "
+        "가정대기 / "
       )
       
       if (thisTab$중증도[1] >= 3) txt <- paste0(txt, "상급의료기관 배정 필요")
       if (thisTab$중증도[1] == 2) txt <- paste0(txt, "의료기관 배정 필요")
-      if (thisTab$중증도[1] <= 1) txt <- paste0(txt, "생활치료센터 유지")
+      if (thisTab$중증도[1] <= 1) txt <- paste0(txt, "가정대기 유지")
       
       HTML(txt)
     })
