@@ -531,11 +531,12 @@ readPat <- function(auth, Link, Link2, Link3) {
       "퇴원여부", "센터", "입력날짜", "차수", "입력시간"
     )
     
+    Pat <- Pat[!is.na(Pat$주민등록번호), ]
     Pat$주민등록번호 <- as.character(Pat$주민등록번호)
     
     Age <- sapply(1:nrow(Pat), function(i) {
       # Year
-      if (substr(Pat$주민등록번호[i], 7, 7) > 2) { ## after 2000
+      if (substr(Pat$주민등록번호[i], 7, 7) %in% 3:4 ) { ## after 2000
         day <- (today - as.Date(paste0("20", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
       }
       else { # before 2000
@@ -605,7 +606,8 @@ server <- function(input, output, session) {
   readData <- function(auth, Link, Link2, Link3, Survey){
     Pat <<- reactive({
       readPat(auth, Link, Link2, Link3) %>% 
-        inner_join(readSurvey(auth, Survey), by = c("주민등록번호", "센터", "이름"))
+        inner_join(select(readSurvey(auth, Survey), -c("센터", "이름")), by = c("주민등록번호")) %>% 
+        mutate(보건소 = ifelse(!is.na(보건소명), 보건소명, 보건소))
     })
     
     output$tab1 <- renderDataTable({
@@ -651,7 +653,7 @@ server <- function(input, output, session) {
       temp <- data.frame(이름 = names(change), 증감 = change, stringsAsFactors = FALSE, row.names = NULL)
       
       newtab <- newtab %>% inner_join(temp)
-      newtab <- newtab %>% select(-날짜)
+      newtab <- newtab 
       newtab <<- newtab
       oritab <<- newtab
       rm(temp)
