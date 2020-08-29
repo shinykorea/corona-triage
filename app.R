@@ -10,6 +10,7 @@ library(gridExtra)
 library(shinymanager) ## login
 library(highcharter) ## interactive graph
 library(googlesheets4) # google sheets
+options(shiny.sanitize.errors = F)
 
 # important -------------------------------- must be development version
 # devtools::install_github('r-lib/gargle')
@@ -491,10 +492,10 @@ readPat <- function(auth, Link, Link2, Link3) {
   #)
   
   withProgress(
-    message = "데이터 읽는 중 (자가)",{
+    message = "데이터 읽는 중 (가정대기)",{
       googledrive::drive_download(Link2, overwrite = T)
-      PatTemp <- readxl::excel_sheets("G-CoMS Data - 자가.xlsx") %>% 
-        lapply(function(x){readxl::read_excel("G-CoMS Data - 자가.xlsx", sheet = x)}) %>% do.call(plyr::rbind.fill, .)
+      PatTemp <- readxl::excel_sheets("G-CoMS Data - 가정대기 중증도 모니터링.xlsx") %>% 
+        lapply(function(x){readxl::read_excel("G-CoMS Data - 가정대기 중증도 모니터링.xlsx", sheet = x)}) %>% do.call(plyr::rbind.fill, .)
       PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
       PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
       PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
