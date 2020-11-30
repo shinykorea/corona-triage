@@ -10,6 +10,7 @@ library(gridExtra)
 library(shinymanager) ## login
 library(highcharter) ## interactive graph
 library(googlesheets4) # google sheets
+options(shiny.sanitize.errors = F)
 
 # important -------------------------------- must be development version
 # devtools::install_github('r-lib/gargle')
@@ -68,6 +69,7 @@ myButton <- function(inputId, label, width = NULL, onClick = NULL, ...) {
 triage <- function(v) {
   PT <- PCO <- 0
   POT <- 0
+  PBC <- PP <- PO <- 0
   if (is.na(v$호흡곤란)) {
     PCF <- ""
     # NO POT ADD
@@ -112,7 +114,50 @@ triage <- function(v) {
     POT <- POT + PCO
   }
   
-  return(c(PT, PCF, PCO, PM, POT))
+  O <- v$산소포화도
+  if (is.na(O)) {
+    PO <- ""
+  } else{
+    if (O <= 95) {
+      PO <- 2
+    }
+    if (O <= 93) {
+      PO <- 3
+    }
+    POT <- POT + PO
+  }
+  
+  BC <- v$호흡수
+  if (is.na(BC)) {
+    PBC <- ""
+  } else{
+    if (BC >= 25 || BC <= 8) {
+      PBC <- 3
+    }
+    if ((BC >= 9 & BC <= 11) | (BC >= 21 & BC <= 24)) {
+      PBC <- 2
+    }
+    POT <- POT + PBC
+  }
+  
+  P <- v$맥박
+  if (is.na(P)) {
+    PP <- ""
+  } else{
+    if (P > 110 || P <= 40) {
+      PP <- 3
+    }
+    if ((P >= 101 & P <=110) | (P >= 41 & P <= 50)) {
+      PP <- 2
+    }
+    POT <- POT + PP
+  }
+  
+  
+  
+  
+  
+  return(c(PT, PCF, PCO, PM, PO, PBC, PP, POT))
 }
 
 ui <- function() {
@@ -134,7 +179,7 @@ ui <- function() {
     
     material_tabs(
       tabs = c(
-        "생활치료센터" = "facility" # ,
+        "가정대기환자 홈케어시스템" = "facility" # ,
         # "가정" = "home" # ,
         # "구글시트예시" = 'google'
       ),
@@ -362,10 +407,10 @@ styleDT <- function(point, change) {
 }
 
 styleDT2 <- function(point) {
-  temp <- 4
-  mental <- 5
-  anxiety <- 6
-  dyspnea <- 7
+  temp <- 6
+  mental <- 7
+  anxiety <- 8
+  dyspnea <- 10
   col2 <- "#ff9d9d" # orange
   col3 <- "#ff6363" # red
   col4 <- "#ffaaa5" #
@@ -416,7 +461,7 @@ readSurvey <- function(auth, Survey) {
   )
   
   Survey$주민등록번호 = as.character(Survey$주민등록번호) 
-    
+  
   # ------ 제일 나중에 업데이트 한걸로 반영영
   
   Survey <- Survey %>% group_by(이름, 주민등록번호) %>% filter(시간 == max(시간)) 
@@ -425,81 +470,74 @@ readSurvey <- function(auth, Survey) {
 }
 
 readPat <- function(auth, Link, Link2, Link3) {
-  sheets_auth(auth) # hide.
+  googledrive::drive_auth(auth) # hide.
   
   today <- Sys.Date()
   
-  sheets <- sheets_sheets(Link)
-  sheets <- sheets[which(lubridate::as_date(sheets) == today)]
+  Pat <- NULL
+  #withProgress(
+  #  message = "데이터 읽는 중 (용인)",{
+  #    googledrive::drive_download(Link, overwrite = T)
+  #    PatTemp <- readxl::excel_sheets("G-CoMS Data - 용인.xlsx") %>% 
+  #      lapply(function(x){readxl::read_excel("G-CoMS Data - 용인.xlsx", sheet = x)}) %>% Reduce(rbind, .)
+  #    PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+  #    PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+  #    PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+  #    PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+  #    PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+  #    PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+  #    PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+  #    Pat <- rbind(Pat, PatTemp)
+  #  }
+  #)
   
-  Pat <- c()
-  if(length(sheets)){
-    withProgress(
-      message = "데이터 읽는 중 (용인)",{
-        PatTemp <- read_sheet(Link, sheet = sheets) # first sheets
-        PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-        PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-        PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-        PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-        PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-        PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-        PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-        Pat <- rbind(Pat, PatTemp)
-      }
-    )
-  }
+  withProgress(
+    message = "데이터 읽는 중 (가정대기)",{
+      googledrive::drive_download(Link2, overwrite = T)
+      PatTemp <- readxl::excel_sheets("G-CoMS Data - 가정대기 중증도 모니터링.xlsx") %>% 
+        lapply(function(x){readxl::read_excel("G-CoMS Data - 가정대기 중증도 모니터링.xlsx", sheet = x)}) %>% do.call(plyr::rbind.fill, .)
+      PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+      PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+      PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+      PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+      PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+      PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+      PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+      PatTemp$시간 <- format(PatTemp$시간, "%H:%M")
+      Pat <- plyr::rbind.fill(Pat, filter(PatTemp, date >= 20200822))
+    }
+  )
   
-  sheets <- sheets_sheets(Link2)
-  sheets <- sheets[which(lubridate::as_date(sheets) == today)]
-  
-  if(length(sheets)){
-    withProgress(
-      message = "데이터 읽는 중 (자가)",{
-        PatTemp <- read_sheet(Link2, sheet = sheets) # first sheets
-        PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-        PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-        PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-        PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-        PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-        PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-        PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-        Pat <- rbind(Pat, PatTemp)
-      }
-    )
-  }
-  
-  sheets <- sheets_sheets(Link3)
-  sheets <- sheets[which(lubridate::as_date(sheets) == today)]
-  
-  if(length(sheets)){
-    withProgress(
-      message = "데이터 읽는 중 (이천)",{
-        PatTemp <- read_sheet(Link3, sheet = sheets) # first sheets
-        PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
-        PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
-        PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
-        PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
-        PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
-        PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
-        PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-        Pat <- rbind(Pat, PatTemp)
-      }
-    )
-  }
+  #withProgress(
+  #  message = "데이터 읽는 중 (이천)",{
+  #    googledrive::drive_download(Link3, overwrite = T)
+  #    PatTemp <- readxl::excel_sheets("G-CoMS Data - 이천.xlsx") %>% 
+  #      lapply(function(x){readxl::read_excel("G-CoMS Data - 이천.xlsx", sheet = x)}) %>% Reduce(rbind, .)
+  #    PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
+  #    PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
+  #    PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
+  #    PatTemp$dyspnea <- as.numeric(unlist(PatTemp$dyspnea))
+  #    PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
+  #    PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
+  #    PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
+  #    Pat <- plyr::rbind.fill(Pat, PatTemp)
+  #  }
+  #)
   
   
   if(length(Pat)){
-    colnames(Pat) <- c(
+    colnames(Pat)[1:15] <- c(
       "주민등록번호", "이름", "체온", "의식저하", "가벼운불안",
       "호흡곤란", "산소포화도", "호흡수", "맥박", "PCR",
-      "퇴원여부", "센터", "입력날짜", "차수"
+      "퇴원여부", "센터", "입력날짜", "차수", "입력시간"
     )
     
+    Pat <- Pat[!is.na(Pat$주민등록번호), ]
     Pat$주민등록번호 <- as.character(Pat$주민등록번호)
     
     Age <- sapply(1:nrow(Pat), function(i) {
       # Year
-      if (substr(Pat$주민등록번호[i], 7, 7) > 2) { ## after 2000
+      if (substr(Pat$주민등록번호[i], 7, 7) %in% 3:4 ) { ## after 2000
         day <- (today - as.Date(paste0("20", substr(Pat$주민등록번호[i], 1, 6)), "%Y%m%d"))[[1]]
       }
       else { # before 2000
@@ -512,10 +550,10 @@ readPat <- function(auth, Link, Link2, Link3) {
     
     TRIS <- sapply(1:nrow(Pat), function(i) {
       Pat[i, ] %>%
-        select(체온, 호흡곤란, 의식저하, 가벼운불안) %>%
+        select(체온, 호흡곤란, 의식저하, 가벼운불안, 산소포화도, 호흡수, 맥박) %>%
         triage()
     })
-    rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "중증도")
+    rownames(TRIS) <- c("체온지수", "심폐지수", "의식지수", "심리지수", "산소포화도지수", "호흡수지수", "맥박지수",  "중증도")
     TRIS <- data.frame(t(TRIS), stringsAsFactors = FALSE)
     
     Pat <- Pat %>% cbind(나이 = Age)
@@ -554,24 +592,23 @@ readPat <- function(auth, Link, Link2, Link3) {
       rename(성별 = Sex)
   }
   
-  load('PatBackup.RData') # Backup Data
-  Pat <- rbind(PatB, Pat)
   Pat$주민등록번호 <- as.character(Pat$주민등록번호)    
   return(data.frame(Pat))
 }
 
 server <- function(input, output, session) {
   
-  auth = "hwanistic@gmail.com" # hide 
-  Link = "" # hide, 용인
-  Link2 = "" # hide, 자가
-  Link3 = "" # hide, 이천
-  Survey = "" # hide, 설문
+  auth = "jinseob2kim@gmail.com"
+  Link = "https://docs.google.com/spreadsheets/d/1G1lPc-N-u3z6kITyr2z3nnyAdf_BKxcLiot7qe_jpKs"
+  Link2 = "http://docs.google.com/spreadsheets/d/1gKGw7_wzymdq2VTvVBTXUi__dBBKEy_2nzOMIpCxc2I"
+  Link3 = "http://docs.google.com/spreadsheets/d/16UNiR49u4sJH9uCceNDzmyC62D0TOybf0xKA-JR4EXo"
+  Survey = "http://docs.google.com/spreadsheets/d/1DRPQLLmQXzM_otTSBd_E1uq2srkO08r3T69rykLoABk"
   
   readData <- function(auth, Link, Link2, Link3, Survey){
     Pat <<- reactive({
       readPat(auth, Link, Link2, Link3) %>% 
-        inner_join(readSurvey(auth, Survey), by = c("주민등록번호", "센터", "이름"))
+        inner_join(select(readSurvey(auth, Survey), -c("센터", "이름")), by = c("주민등록번호")) %>% 
+        mutate(보건소 = ifelse(!is.na(보건소명), 보건소명, 보건소))
     })
     
     output$tab1 <- renderDataTable({
@@ -579,7 +616,7 @@ server <- function(input, output, session) {
       ## 증감 계산 -------------------------------------------------------------
       
       discharged <- Pat() %>%
-        filter(!is.na(퇴원여부)) %>%
+        filter(!is.na(퇴원여부) & `퇴원여부` != 0) %>%
         select(이름) %>%
         unlist(use.names = FALSE)
       
@@ -591,7 +628,7 @@ server <- function(input, output, session) {
         filter(!is.na(호흡곤란)) %>%
         filter(!이름 %in% discharged) %>%
         filter(날짜 == max(날짜)) %>% # recent data
-        select(주민등록번호, 이름, 성별, 나이, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 중증도, 날짜)
+        select(주민등록번호, 이름, 성별, 나이, 센터, 체온지수, 의식지수, 심리지수, 심폐지수, 산소포화도지수, 호흡수지수, 맥박지수, 중증도, 날짜)
       
       temp <- Pat() %>%
         group_by(이름) %>%
@@ -617,7 +654,7 @@ server <- function(input, output, session) {
       temp <- data.frame(이름 = names(change), 증감 = change, stringsAsFactors = FALSE, row.names = NULL)
       
       newtab <- newtab %>% inner_join(temp)
-      newtab <- newtab %>% select(-날짜)
+      newtab <- newtab 
       newtab <<- newtab
       oritab <<- newtab
       rm(temp)
@@ -714,39 +751,39 @@ server <- function(input, output, session) {
         
         tagList(
           material_infobox(
-            width = 2, offset = 1,
+            width = 3, offset = 1,
             contents = paste0(higher, "명"),
             Infotitle = "상급의료기관 배정 필요",
             Cardcolor = "#ff6363",
             boxid = "higherBox"
           ), # pink
           material_infobox(
-            width = 2, contents = paste0(pat, "명"),
+            width = 3, contents = paste0(pat, "명"),
             Infotitle = "의료기관 배정 필요",
             Cardcolor = "#ff9d9d",
             boxid = "patBox"
           ), # sky
-          material_infobox(
-            width = 2, contents = lastTime2,
-            Infotitle = "업데이트시간(용인)",
-            Cardcolor = "#35a4c6",
-            boxid = "timeBox1"
-          ), # green
+          #material_infobox(
+          #  width = 2, contents = lastTime2,
+          #  Infotitle = "업데이트시간(용인)",
+          #  Cardcolor = "#35a4c6",
+          #  boxid = "timeBox1"
+          #), # green
+          
+          #material_infobox(
+          #  width = 2, contents = lastTime3,
+          #  Infotitle = "업데이트시간(이천)",
+          #  Cardcolor = "#35a4c6",
+          #  boxid = "timeBox3"
+          #), # purple
           
           material_infobox(
-            width = 2, contents = lastTime1,
-            Infotitle = "업데이트시간(이천)",
-            Cardcolor = "#35a4c6",
-            boxid = "timeBox3"
-          ), # purple
-          
-          material_infobox(
-            width = 2, contents = lastTime1,
+            width = 3, contents = lastTime1,
             Infotitle = "업데이트시간(자가)",
             Cardcolor = "#35a4c6",
             boxid = "timeBox2"
           ) # purple
-         
+          
         )
       })
       
@@ -762,7 +799,7 @@ server <- function(input, output, session) {
         escape = FALSE,
         options = list(
           # styleDT : 체온지수, 심폐지수, 의식지수, 심리지수, 중증도, 증감의 인덱스 - 1
-          rowCallback = styleDT(9, 10),
+          rowCallback = styleDT(12, 13),
           dom = "tip",
           order = list(list(9, "desc")),
           pageLength = 50
@@ -814,7 +851,7 @@ server <- function(input, output, session) {
         rownames = FALSE
       ) 
     )
-    
+    #output$tab1 <- renderDataTable(newtab)
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
     shinyjs::hide('tab0')
@@ -843,7 +880,7 @@ server <- function(input, output, session) {
         rownames = FALSE
       ) 
     )
-    
+    #output$tab1 <- renderDataTable( newtab )
     shinyjs::show("resetBox")
     shinyjs::hide("unorder")
     shinyjs::hide('tab0')
@@ -1004,12 +1041,12 @@ server <- function(input, output, session) {
         thisTab$이름[1], " / ",
         thisTab$성별[1], " / ",
         thisTab$나이[1], " / ",
-        thisTab$센터[1], "센터 / "
+        "가정대기 / "
       )
       
       if (thisTab$중증도[1] >= 3) txt <- paste0(txt, "상급의료기관 배정 필요")
       if (thisTab$중증도[1] == 2) txt <- paste0(txt, "의료기관 배정 필요")
-      if (thisTab$중증도[1] <= 1) txt <- paste0(txt, "생활치료센터 유지")
+      if (thisTab$중증도[1] <= 1) txt <- paste0(txt, "가정대기 유지")
       
       HTML(txt)
     })
@@ -1130,7 +1167,7 @@ server <- function(input, output, session) {
     # specific table content -------------------------------------------------
     output$tab2 <- renderDataTable({
       thisTab <- thisTab %>%
-        select(주민등록번호, 입력날짜, 차수, 중증도, PCR, 체온, 의식지수, 심리지수, 심폐지수, 호흡곤란, 산소포화도, 호흡수, 맥박) %>%
+        select(주민등록번호, 입력날짜, 입력시간, 담당자명, 차수, 중증도, PCR, 체온, 의식지수, 심리지수, 심폐지수, 호흡곤란, 산소포화도, 호흡수, 맥박) %>%
         inner_join(newtab %>% select(주민등록번호)) %>%
         select(-주민등록번호, -이름)
       
@@ -1143,7 +1180,7 @@ server <- function(input, output, session) {
           escape = FALSE,
           selection = "none",
           options = list(
-            rowCallback = styleDT2(7),
+            rowCallback = styleDT2(4),
             dom = "tip",
             autoWidth = FALSE,
             # order = list(list(TRIIDX, "desc")),
