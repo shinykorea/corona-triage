@@ -504,7 +504,7 @@ readPat <- function(auth, Link, Link2, Link3) {
       PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
       PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
       PatTemp$시간 <- format(PatTemp$시간, "%H:%M")
-      Pat <- plyr::rbind.fill(Pat, filter(PatTemp, date >= 20200822))
+      Pat <- plyr::rbind.fill(Pat, filter(PatTemp, date >= 20200831))
     }
   )
   
@@ -533,7 +533,7 @@ readPat <- function(auth, Link, Link2, Link3) {
     )
     
     Pat <- Pat[!is.na(Pat$주민등록번호), ]
-    Pat$주민등록번호 <- as.character(Pat$주민등록번호)
+    Pat$주민등록번호 <- as.character(as.numeric(Pat$주민등록번호))
     
     Age <- sapply(1:nrow(Pat), function(i) {
       # Year
