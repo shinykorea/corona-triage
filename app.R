@@ -534,6 +534,7 @@ readPat <- function(auth, Link, Link2, Link3) {
     
     Pat <- Pat[!is.na(Pat$주민등록번호), ]
     Pat$주민등록번호 <- as.character(as.numeric(Pat$주민등록번호))
+    Pat$주민등록번호 <- ifelse(nchar(Pat$주민등록번호) == 12, paste0("0", Pat$주민등록번호), Pat$주민등록번호) 
     
     Age <- sapply(1:nrow(Pat), function(i) {
       # Year
@@ -672,13 +673,15 @@ server <- function(input, output, session) {
         higher <- Pat() %>%
           group_by(이름) %>%
           filter(날짜 == max(날짜)) %>%
-          filter(중증도 >= 3) %>%
+          filter(중증도 >= 3) %>% 
+          filter(!이름 %in% discharged) %>% 
           nrow()
         
         pat <- Pat() %>%
           group_by(이름) %>%
           filter(날짜 == max(날짜)) %>%
           filter(중증도 == 2) %>%
+          filter(!이름 %in% discharged) %>% 
           nrow()
         
         lastTime1 <- Pat() %>%
