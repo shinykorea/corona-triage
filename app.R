@@ -444,7 +444,7 @@ asDate <- function(i) {
 }
 
 readSurvey <- function(auth, Survey) {
-  sheets_auth(auth) # hide.
+  gs4_auth(auth) # hide.
   Link <- Survey # hide.
   
   withProgress(
@@ -534,7 +534,10 @@ readPat <- function(auth, Link, Link2, Link3) {
     
     Pat <- Pat[!is.na(Pat$주민등록번호), ]
     Pat$주민등록번호 <- as.character(as.numeric(Pat$주민등록번호))
-    Pat$주민등록번호 <- ifelse(nchar(Pat$주민등록번호) == 12, paste0("0", Pat$주민등록번호), Pat$주민등록번호) 
+    Pat$주민등록번호 <- ifelse(nchar(Pat$주민등록번호) == 12, paste0("0", Pat$주민등록번호), 
+                         ifelse(nchar(Pat$주민등록번호) == 11, paste0("00", Pat$주민등록번호), 
+                                ifelse(nchar(Pat$주민등록번호) == 10, paste0("000", Pat$주민등록번호),
+                                       Pat$주민등록번호))) 
     
     Age <- sapply(1:nrow(Pat), function(i) {
       # Year
