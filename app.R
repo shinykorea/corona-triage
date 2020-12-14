@@ -504,6 +504,7 @@ readPat <- function(auth, Link, Link2, Link3) {
       PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
       PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
       PatTemp$시간 <- format(PatTemp$시간, "%H:%M")
+      PatTemp$date <- as.numeric(ifelse(substr(PatTemp$date, 3, 4)  == "20", PatTemp$date, paste0(20, PatTemp$date)))
       Pat <- plyr::rbind.fill(Pat, filter(PatTemp, date >= 20200901))
     }
   )
