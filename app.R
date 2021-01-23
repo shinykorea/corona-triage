@@ -494,8 +494,9 @@ readPat <- function(auth, Link, Link2, Link3) {
   withProgress(
     message = "데이터 읽는 중 (가정대기)",{
       googledrive::drive_download(Link2, overwrite = T)
-      PatTemp <- readxl::excel_sheets("G-CoMS Data - 가정대기 중증도 모니터링.xlsx") %>% 
-        lapply(function(x){readxl::read_excel("G-CoMS Data - 가정대기 중증도 모니터링.xlsx", sheet = x)}) %>% do.call(plyr::rbind.fill, .)
+      PatTemp <- readxl::excel_sheets("G-CoMS Data - 가정대기 중증도 모니터링의 사본.xlsx") %>% 
+        lapply(function(x){readxl::read_excel("G-CoMS Data - 가정대기 중증도 모니터링의 사본.xlsx", sheet = x)}) 
+      PatTemp <- do.call(plyr::rbind.fill, PatTemp[23:length(PatTemp)])
       PatTemp$temperature <- as.numeric(unlist(PatTemp$temperature))
       PatTemp$mental <- as.numeric(unlist(PatTemp$mental))
       PatTemp$anxiety <- as.numeric(unlist(PatTemp$anxiety))
@@ -503,9 +504,9 @@ readPat <- function(auth, Link, Link2, Link3) {
       PatTemp$sao2 <- as.numeric(unlist(PatTemp$sao2))
       PatTemp$HR <- as.numeric(unlist(PatTemp$HR))
       PatTemp$PCR <- as.numeric(unlist(PatTemp$PCR))
-      PatTemp$시간 <- format(PatTemp$시간, "%H:%M")
+      #PatTemp$시간 <- format(PatTemp$시간, "%H:%M")
       PatTemp$date <- as.numeric(ifelse(substr(PatTemp$date, 3, 4)  == "20", PatTemp$date, paste0(20, PatTemp$date)))
-      Pat <- plyr::rbind.fill(Pat, filter(PatTemp, date >= 20200901))
+      Pat <- plyr::rbind.fill(Pat, filter(PatTemp, date >= 20210101))
     }
   )
   
@@ -606,7 +607,7 @@ server <- function(input, output, session) {
   
   auth = "jinseob2kim@gmail.com"
   Link = "https://docs.google.com/spreadsheets/d/1G1lPc-N-u3z6kITyr2z3nnyAdf_BKxcLiot7qe_jpKs"
-  Link2 = "http://docs.google.com/spreadsheets/d/1gKGw7_wzymdq2VTvVBTXUi__dBBKEy_2nzOMIpCxc2I"
+  Link2 = "https://docs.google.com/spreadsheets/d/1wgvy557qlso-nt4bAyjxS0HNwPnmkbVct03jVOlz_Uo"
   Link3 = "http://docs.google.com/spreadsheets/d/16UNiR49u4sJH9uCceNDzmyC62D0TOybf0xKA-JR4EXo"
   Survey = "http://docs.google.com/spreadsheets/d/1DRPQLLmQXzM_otTSBd_E1uq2srkO08r3T69rykLoABk"
   
